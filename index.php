@@ -13,6 +13,7 @@ use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Services\WebhookService;
 use App\Controllers\WebhookController;
+use App\Controllers\DashboardController;
 
 // Load environment variables
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
@@ -31,6 +32,7 @@ $webhookService = new WebhookService($threadRepo, $emailRepo, $logger);
 
 // Initialize controllers
 $webhookController = new WebhookController($webhookService, $logger);
+$dashboardController = new DashboardController($threadRepo, $emailRepo);
 
 // Get request details
 $method = $_SERVER['REQUEST_METHOD'];
@@ -47,6 +49,20 @@ $router->get('/health', function($params) {
         'message' => 'Email Tracking API is running',
         'timestamp' => date('c')
     ]);
+});
+
+// Dashboard
+$router->get('/', function($params) {
+    require __DIR__ . '/dashboard.php';
+});
+
+$router->get('/dashboard', function($params) {
+    require __DIR__ . '/dashboard.php';
+});
+
+// Dashboard API
+$router->get('/api/dashboard', function($params) use ($dashboardController) {
+    $dashboardController->getData();
 });
 
 // Webhook endpoint
