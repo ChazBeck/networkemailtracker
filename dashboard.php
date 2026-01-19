@@ -29,7 +29,18 @@
             try {
                 // Use relative path for API call
                 const response = await fetch('api/dashboard');
+                
+                console.log('API Response status:', response.status);
+                console.log('API Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('API Error:', text);
+                    throw new Error(`HTTP ${response.status}: ${text}`);
+                }
+                
                 const data = await response.json();
+                console.log('API Data:', data);
                 
                 const container = document.getElementById('threads-container');
                 
@@ -103,7 +114,11 @@
             } catch (error) {
                 console.error('Error loading dashboard:', error);
                 document.getElementById('threads-container').innerHTML = 
-                    '<div class="text-center text-red-500">Failed to load dashboard data</div>';
+                    `<div class="text-center text-red-500">
+                        <p>Failed to load dashboard data</p>
+                        <p class="text-sm mt-2">${error.message}</p>
+                        <p class="text-xs mt-2">Check browser console for details</p>
+                    </div>`;
             }
         }
         
