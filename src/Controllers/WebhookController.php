@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Services\WebhookService;
+use App\Services\PayloadNormalizer;
 use Psr\Log\LoggerInterface;
 
 class WebhookController
@@ -46,16 +47,19 @@ class WebhookController
                 return;
             }
             
+            // Normalize Power Automate payload to internal format
+            $normalizedPayload = PayloadNormalizer::normalize($payload);
+            
             // Log webhook received
             $this->logger->info('Webhook received', [
-                'event_type' => $payload['event_type'] ?? 'unknown',
-                'event_id' => $payload['event_id'] ?? null,
-                'has_graph_id' => !empty($payload['data']['graph_message_id'] ?? null),
-                'has_internet_id' => !empty($payload['data']['internet_message_id'] ?? null)
+                'event_type' => $normalizedPayload['event_type'] ?? 'unknown',
+                'graph_message_id' => $normalizedPayload['data']['graph_message_id'] ?? null,
+                'internet_message_id' => $normalizedPayload['data']['internet_message_id'] ?? null,
+                'from_email' => $normalizedPayload['data']['from_email'] ?? null
             ]);
             
             // Process webhook
-            $result = $this->webhookService->processEmailWebhook($payload);
+            $result = $this->webhookService->processEmailWebhook($normalizedPayload);
             
             // Return 202 Accepted (webhook processed)
             http_response_code(202);
