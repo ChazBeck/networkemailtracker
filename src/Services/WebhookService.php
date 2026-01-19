@@ -257,4 +257,15 @@ class WebhookService
             return null;
         }
     }
+    
+    /**
+     * Get thread by ID (for Monday sync)
+     * 
+     * @param int $threadId
+     * @return array|null
+     */
+    public function getThreadById(int $threadId): ?array
+    {
+        return $this->threadRepo->findById($threadId);
+    }
 }

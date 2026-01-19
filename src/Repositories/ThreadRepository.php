@@ -108,4 +108,18 @@ class ThreadRepository
         $stmt = $this->db->prepare($sql);
         return $stmt->execute($params);
     }
+    
+    /**
+     * Find thread by ID
+     * 
+     * @param int $id
+     * @return array|null
+     */
+    public function findById(int $id): ?array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM threads WHERE id = ? LIMIT 1");
+        $stmt->execute([$id]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
 }

@@ -6,7 +6,9 @@ use App\Core\Database;
 use App\Core\Logger;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
+use App\Repositories\MondaySyncRepository;
 use App\Services\WebhookService;
+use App\Services\MondayService;
 use App\Controllers\WebhookController;
 
 // Load environment variables
@@ -20,12 +22,14 @@ $logger = Logger::getInstance();
 // Initialize repositories
 $threadRepo = new ThreadRepository($db);
 $emailRepo = new EmailRepository($db);
+$mondaySyncRepo = new MondaySyncRepository($db);
 
 // Initialize services
 $webhookService = new WebhookService($threadRepo, $emailRepo, $logger);
+$mondayService = new MondayService($mondaySyncRepo, $threadRepo, $logger);
 
 // Initialize controller
-$webhookController = new WebhookController($webhookService, $logger);
+$webhookController = new WebhookController($webhookService, $logger, $mondayService);
 
 // Process webhook
 $webhookController->ingest();

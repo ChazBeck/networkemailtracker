@@ -3,20 +3,24 @@
 namespace App\Controllers;
 
 use App\Services\WebhookService;
+use App\Services\MondayService;
 use App\Services\PayloadNormalizer;
 use Psr\Log\LoggerInterface;
 
 class WebhookController
 {
     private WebhookService $webhookService;
+    private ?MondayService $mondayService;
     private LoggerInterface $logger;
     
     public function __construct(
         WebhookService $webhookService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?MondayService $mondayService = null
     ) {
         $this->webhookService = $webhookService;
         $this->logger = $logger;
+        $this->mondayService = $mondayService;
     }
     
     /**
@@ -60,6 +64,26 @@ class WebhookController
             
             // Process webhook
             $result = $this->webhookService->processEmailWebhook($normalizedPayload);
+            
+            // Auto-sync to Monday.com if enabled and not a duplicate
+            if ($this->mondayService && !$result['duplicate']) {
+                try {
+                    // Get the full thread data
+                    $thread = $this->webhookService->getThreadById($result['thread_id']);
+                    if ($thread && $thread['external_email']) {
+                        $this->mondayService->syncThread($thread);
+                        $this->logger->info('Auto-synced thread to Monday', [
+                            'thread_id' => $result['thread_id']
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    // Log but don't fail webhook if Monday sync fails
+                    $this->logger->warning('Monday sync failed', [
+                        'thread_id' => $result['thread_id'],
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
             
             // Return 202 Accepted (webhook processed)
             http_response_code(202);
