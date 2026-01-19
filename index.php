@@ -39,9 +39,10 @@ $method = $_SERVER['REQUEST_METHOD'];
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // Strip base path if running in subdirectory
-$basePath = '/networkemailtracking';
-if (strpos($uri, $basePath) === 0) {
-    $uri = substr($uri, strlen($basePath));
+// Try to detect base path from SCRIPT_NAME
+$scriptName = dirname($_SERVER['SCRIPT_NAME']);
+if ($scriptName !== '/' && strpos($uri, $scriptName) === 0) {
+    $uri = substr($uri, strlen($scriptName));
 }
 if (empty($uri)) {
     $uri = '/';
