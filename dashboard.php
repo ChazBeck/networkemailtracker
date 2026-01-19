@@ -13,66 +13,13 @@
             <p class="text-gray-600 mt-2">Monitoring networking@veerless.com</p>
         </div>
 
-        <!-- Stats -->
-        <div class="grid grid-cols-2 gap-4 mb-8">
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="text-sm text-gray-600">Total Threads</div>
-                <div id="stat-threads" class="text-3xl font-bold text-gray-900">-</div>
-            </div>
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="text-sm text-gray-600">Total Emails</div>
-                <div id="stat-emails" class="text-3xl font-bold text-gray-900">-</div>
-            </div>
-        </div>
-
-        <!-- Threads Table -->
-        <div class="bg-white rounded-lg shadow mb-8">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900">Threads</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">External Email</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Internal Email</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Emails</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Activity</th>
-                        </tr>
-                    </thead>
-                    <tbody id="threads-body" class="bg-white divide-y divide-gray-200">
-                        <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Recent Emails Table -->
+        <!-- Threads with Emails -->
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900">Recent Emails</h2>
+                <h2 class="text-xl font-semibold text-gray-900">Threads & Messages</h2>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Direction</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">From</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Preview</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="emails-body" class="bg-white divide-y divide-gray-200">
-                        <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div id="threads-container" class="p-6">
+                <div class="text-center text-gray-500">Loading...</div>
             </div>
         </div>
     </div>
@@ -83,58 +30,79 @@
                 const response = await fetch('/api/dashboard');
                 const data = await response.json();
                 
-                // Update stats
-                document.getElementById('stat-threads').textContent = data.stats.total_threads;
-                document.getElementById('stat-emails').textContent = data.stats.total_emails;
+                const container = document.getElementById('threads-container');
                 
-                // Update threads table
-                const threadsBody = document.getElementById('threads-body');
                 if (data.threads.length === 0) {
-                    threadsBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No threads yet</td></tr>';
-                } else {
-                    threadsBody.innerHTML = data.threads.map(thread => `
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${thread.external_email}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${thread.internal_sender_email}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">${thread.subject_normalized || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${thread.email_count}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs rounded-full ${
-                                    thread.status === 'Responded' ? 'bg-blue-100 text-blue-800' :
-                                    thread.status === 'Closed' ? 'bg-gray-100 text-gray-800' :
-                                    'bg-green-100 text-green-800'
-                                }">${thread.status}</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatDate(thread.last_activity_at)}</td>
-                        </tr>
-                    `).join('');
+                    container.innerHTML = '<div class="text-center text-gray-500">No threads yet</div>';
+                    return;
                 }
                 
-                // Update emails table
-                const emailsBody = document.getElementById('emails-body');
-                if (data.emails.length === 0) {
-                    emailsBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No emails yet</td></tr>';
-                } else {
-                    emailsBody.innerHTML = data.emails.map(email => `
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs rounded-full ${
-                                    email.direction === 'inbound' ? 'bg-blue-100 text-blue-800' :
-                                    email.direction === 'outbound' ? 'bg-purple-100 text-purple-800' :
-                                    'bg-gray-100 text-gray-800'
-                                }">${email.direction}</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${email.from_email || 'N/A'}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">${email.subject || 'N/A'}</td>
-                            <td class="px-6 py-4 text-sm text-gray-600">${truncate(email.body_preview, 50)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatDate(email.received_at || email.sent_at)}</td>
-                        </tr>
-                    `).join('');
-                }
+                // Group emails by thread_id
+                const emailsByThread = {};
+                data.emails.forEach(email => {
+                    if (!emailsByThread[email.thread_id]) {
+                        emailsByThread[email.thread_id] = [];
+                    }
+                    emailsByThread[email.thread_id].push(email);
+                });
+                
+                // Build nested view
+                container.innerHTML = data.threads.map(thread => {
+                    const threadEmails = emailsByThread[thread.id] || [];
+                    
+                    return `
+                        <div class="mb-6 border border-gray-200 rounded-lg">
+                            <!-- Thread Header -->
+                            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="font-semibold text-gray-900">${thread.subject_normalized || 'No Subject'}</div>
+                                        <div class="text-sm text-gray-600 mt-1">
+                                            ${thread.external_email} ↔ ${thread.internal_sender_email}
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="px-2 py-1 text-xs rounded-full ${
+                                            thread.status === 'Responded' ? 'bg-blue-100 text-blue-800' :
+                                            thread.status === 'Closed' ? 'bg-gray-100 text-gray-800' :
+                                            'bg-green-100 text-green-800'
+                                        }">${thread.status}</span>
+                                        <div class="text-xs text-gray-500 mt-1">${thread.email_count} message${thread.email_count !== 1 ? 's' : ''}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Thread Messages -->
+                            <div class="divide-y divide-gray-100">
+                                ${threadEmails.length === 0 ? 
+                                    '<div class="px-4 py-3 text-sm text-gray-500">No messages loaded</div>' :
+                                    threadEmails.map(email => `
+                                        <div class="px-4 py-3 hover:bg-gray-50">
+                                            <div class="flex justify-between items-start mb-1">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="px-2 py-1 text-xs rounded-full ${
+                                                        email.direction === 'inbound' ? 'bg-blue-100 text-blue-800' :
+                                                        email.direction === 'outbound' ? 'bg-purple-100 text-purple-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                    }">${email.direction}</span>
+                                                    <span class="text-sm font-medium text-gray-900">${email.from_email || 'N/A'}</span>
+                                                </div>
+                                                <span class="text-xs text-gray-500">${formatDate(email.received_at || email.sent_at)}</span>
+                                            </div>
+                                            <div class="text-sm text-gray-700">${email.subject || 'No Subject'}</div>
+                                            ${email.body_preview ? `<div class="text-xs text-gray-500 mt-1">${truncate(email.body_preview, 100)}</div>` : ''}
+                                        </div>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
+                    `;
+                }).join('');
                 
             } catch (error) {
                 console.error('Error loading dashboard:', error);
-                alert('Failed to load dashboard data');
+                document.getElementById('threads-container').innerHTML = 
+                    '<div class="text-center text-red-500">Failed to load dashboard data</div>';
             }
         }
         
