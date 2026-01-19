@@ -1,0 +1,10 @@
+/vendor/
+/.env
+/logs/*.log
+*.log
+.DS_Store
+composer.lock
+/public/uploads/*
+!/public/uploads/.gitkeep
+.idea/
+.vscode/
