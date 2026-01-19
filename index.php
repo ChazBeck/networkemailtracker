@@ -38,6 +38,15 @@ $dashboardController = new DashboardController($threadRepo, $emailRepo);
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// Strip base path if running in subdirectory
+$basePath = '/networkemailtracking';
+if (strpos($uri, $basePath) === 0) {
+    $uri = substr($uri, strlen($basePath));
+}
+if (empty($uri)) {
+    $uri = '/';
+}
+
 // Initialize router
 $router = new Router();
 
