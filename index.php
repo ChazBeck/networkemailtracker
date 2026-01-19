@@ -4,14 +4,14 @@
  * Front Controller - Main entry point for all HTTP requests
  */
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Core\Router;
 use App\Core\Database;
 use App\Core\Logger;
 
 // Load environment variables
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
 // Get request details

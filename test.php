@@ -1,4 +1,4 @@
 <?php
-echo "✅ Root level test file working!";
-echo "<br>Location: Repository root directory";
-echo "<br>File: test.php";
+echo "✅ Public directory test file working!";
+echo "<br>Location: public/ directory";
+echo "<br>File: public/test.php";

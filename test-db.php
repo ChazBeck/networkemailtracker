@@ -9,11 +9,11 @@
  * DELETE THIS FILE after successful testing for security!
  */
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 // Load environment variables
 try {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
     $dotenv->load();
     echo "✅ Environment file loaded<br><br>";
 } catch (Exception $e) {
@@ -33,7 +33,7 @@ echo "</pre><br>";
 echo "<h2>Connection Test</h2>";
 
 try {
-    $config = require __DIR__ . '/../config/database.php';
+    $config = require __DIR__ . '/config/database.php';
     
     $dsn = sprintf(
         "mysql:host=%s;dbname=%s;charset=%s",
