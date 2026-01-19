@@ -1,0 +1,98 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Services\WebhookService;
+use Psr\Log\LoggerInterface;
+
+class WebhookController
+{
+    private WebhookService $webhookService;
+    private LoggerInterface $logger;
+    
+    public function __construct(
+        WebhookService $webhookService,
+        LoggerInterface $logger
+    ) {
+        $this->webhookService = $webhookService;
+        $this->logger = $logger;
+    }
+    
+    /**
+     * Handle incoming email webhook
+     * POST /api/webhook/email
+     */
+    public function ingest(): void
+    {
+        try {
+            // Get raw payload
+            $rawPayload = file_get_contents('php://input');
+            
+            // Parse JSON
+            $payload = json_decode($rawPayload, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logger->error('Invalid JSON in webhook', [
+                    'error' => json_last_error_msg(),
+                    'payload_preview' => substr($rawPayload, 0, 200)
+                ]);
+                
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Invalid JSON'
+                ]);
+                return;
+            }
+            
+            // Log webhook received
+            $this->logger->info('Webhook received', [
+                'event_type' => $payload['event_type'] ?? 'unknown',
+                'event_id' => $payload['event_id'] ?? null,
+                'has_graph_id' => !empty($payload['data']['graph_message_id'] ?? null),
+                'has_internet_id' => !empty($payload['data']['internet_message_id'] ?? null)
+            ]);
+            
+            // Process webhook
+            $result = $this->webhookService->processEmailWebhook($payload);
+            
+            // Return 202 Accepted (webhook processed)
+            http_response_code(202);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'email_id' => $result['email_id'],
+                'thread_id' => $result['thread_id'],
+                'duplicate' => $result['duplicate'],
+                'message' => $result['duplicate'] ? 'Email already processed' : 'Email processed successfully'
+            ]);
+            
+        } catch (\PDOException $e) {
+            $this->logger->error('Database error processing webhook', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
+            
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => 'Database error'
+            ]);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Error processing webhook', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => 'Internal server error'
+            ]);
+        }
+    }
+}
