@@ -27,7 +27,8 @@
     <script>
         async function loadDashboard() {
             try {
-                const response = await fetch('/api/dashboard');
+                // Use relative path for API call
+                const response = await fetch('api/dashboard');
                 const data = await response.json();
                 
                 const container = document.getElementById('threads-container');
