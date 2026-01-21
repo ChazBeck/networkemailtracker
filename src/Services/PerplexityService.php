@@ -14,11 +14,12 @@ class PerplexityService
     public function __construct(LoggerInterface $logger)
     {
         $this->apiKey = $_ENV['PERPLEXITY_API_KEY'] ?? '';
-        $this->model = $_ENV['PERPLEXITY_MODEL'] ?? 'llama-3.1-sonar-small-128k-online';
+        $this->model = $_ENV['PERPLEXITY_MODEL'] ?? 'sonar';
         $this->logger = $logger;
+        $this->apiUrl = 'https://api.perplexity.ai/chat/completions';
         
         if (empty($this->apiKey)) {
-            throw new \Exception('PERPLEXITY_API_KEY not configured');
+            $this->logger->warning('PERPLEXITY_API_KEY not configured - enrichment will be skipped');
         }
     }
     
@@ -31,6 +32,15 @@ class PerplexityService
      */
     public function enrichContact(string $email, array $context = []): array
     {
+        // Skip if API key not configured
+        if (empty($this->apiKey)) {
+            return [
+                'success' => false,
+                'error' => 'Perplexity API key not configured',
+                'data' => []
+            ];
+        }
+        
         $prompt = $this->buildEnrichmentPrompt($email, $context);
         
         $this->logger->debug('Perplexity enrichment request', [
@@ -139,7 +149,8 @@ class PerplexityService
                 'Content-Type: application/json'
             ],
             CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_TIMEOUT => 30
+            CURLOPT_TIMEOUT => 5,
+            CURLOPT_CONNECTTIMEOUT => 2
         ]);
         
         $response = curl_exec($ch);
