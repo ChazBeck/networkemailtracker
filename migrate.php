@@ -11,13 +11,17 @@ require_once __DIR__ . '/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
-// Security: Only allow access from localhost or with a secret key
-$secretKey = $_ENV['MIGRATION_SECRET'] ?? 'change-this-secret-key';
-$providedKey = $_GET['key'] ?? '';
+// Security: Simple confirmation to prevent accidental access
+$confirmed = $_GET['confirm'] ?? '';
 
-if ($_SERVER['REMOTE_ADDR'] !== '127.0.0.1' && $providedKey !== $secretKey) {
-    http_response_code(403);
-    die('Access denied. Run from localhost or provide correct key parameter.');
+if ($confirmed !== 'yes' && !isset($_POST['run_migration'])) {
+    echo '<div style="font-family: Arial; max-width: 600px; margin: 100px auto; padding: 30px; border: 3px solid #ffc107; border-radius: 8px; background: #fff3cd;">';
+    echo '<h2>⚠️ Database Migration Tool</h2>';
+    echo '<p>This will modify your database. Make sure you have a backup!</p>';
+    echo '<p><a href="?confirm=yes" style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Yes, I want to run migrations</a></p>';
+    echo '<p><strong>IMPORTANT:</strong> Delete this file after running migrations!</p>';
+    echo '</div>';
+    exit;
 }
 
 ?>
