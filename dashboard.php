@@ -7,10 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
+<?php
+require_once __DIR__ . '/vendor/autoload.php';
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+?>
     <div class="container mx-auto px-4 py-8">
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">Email Tracking Dashboard</h1>
-            <p class="text-gray-600 mt-2">Monitoring networking@veerless.com</p>
+            <p class="text-gray-600 mt-2">Monitoring <?php echo htmlspecialchars($_ENV['INTERNAL_EMAIL'] ?? 'networking@veerless.com'); ?></p>
         </div>
 
         <!-- Threads with Emails -->

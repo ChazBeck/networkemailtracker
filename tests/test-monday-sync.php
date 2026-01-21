@@ -1,16 +1,18 @@
 <?php
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Core\Database;
 use App\Services\MondayService;
 use App\Repositories\MondaySyncRepository;
 use App\Repositories\ThreadRepository;
+use App\Repositories\EmailRepository;
+use App\Repositories\EnrichmentRepository;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
 // Load environment
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
 // Setup
@@ -20,7 +22,9 @@ $logger->pushHandler(new StreamHandler(__DIR__ . '/logs/monday-sync.log', Logger
 
 $syncRepo = new MondaySyncRepository($db);
 $threadRepo = new ThreadRepository($db);
-$mondayService = new MondayService($syncRepo, $threadRepo, $logger);
+$emailRepo = new EmailRepository($db);
+$enrichmentRepo = new EnrichmentRepository($db);
+$mondayService = new MondayService($syncRepo, $threadRepo, $enrichmentRepo, $emailRepo, $logger);
 
 echo "\n=== Testing Monday.com Sync ===\n\n";
 

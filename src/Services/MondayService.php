@@ -4,12 +4,16 @@ namespace App\Services;
 
 use App\Repositories\MondaySyncRepository;
 use App\Repositories\ThreadRepository;
+use App\Repositories\EnrichmentRepository;
+use App\Repositories\EmailRepository;
 use Psr\Log\LoggerInterface;
 
 class MondayService
 {
     private MondaySyncRepository $syncRepo;
     private ThreadRepository $threadRepo;
+    private EnrichmentRepository $enrichmentRepo;
+    private EmailRepository $emailRepo;
     private LoggerInterface $logger;
     private string $apiKey;
     private string $boardId;
@@ -18,10 +22,14 @@ class MondayService
     public function __construct(
         MondaySyncRepository $syncRepo,
         ThreadRepository $threadRepo,
+        EnrichmentRepository $enrichmentRepo,
+        EmailRepository $emailRepo,
         LoggerInterface $logger
     ) {
         $this->syncRepo = $syncRepo;
         $this->threadRepo = $threadRepo;
+        $this->enrichmentRepo = $enrichmentRepo;
+        $this->emailRepo = $emailRepo;
         $this->logger = $logger;
         
         // Load Monday.com configuration from environment
@@ -356,14 +364,14 @@ class MondayService
     private function getEnrichmentData(int $threadId): ?array
     {
         try {
-            $stmt = $this->threadRepo->db->prepare('
-                SELECT * FROM contact_enrichment 
-                WHERE thread_id = ? AND enrichment_status = "complete"
-                LIMIT 1
-            ');
-            $stmt->execute([$threadId]);
-            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-            return $result ?: null;
+            $enrichment = $this->enrichmentRepo->findByThreadId($threadId);
+            
+            // Only return if enrichment is complete
+            if ($enrichment && $enrichment['enrichment_status'] === 'complete') {
+                return $enrichment;
+            }
+            
+            return null;
         } catch (\Exception $e) {
             $this->logger->warning('Failed to fetch enrichment data', [
                 'thread_id' => $threadId,
@@ -382,15 +390,7 @@ class MondayService
     private function getFirstEmail(int $threadId): ?array
     {
         try {
-            $stmt = $this->threadRepo->db->prepare('
-                SELECT * FROM emails 
-                WHERE thread_id = ? 
-                ORDER BY created_at ASC 
-                LIMIT 1
-            ');
-            $stmt->execute([$threadId]);
-            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-            return $result ?: null;
+            return $this->emailRepo->getFirstByThreadId($threadId);
         } catch (\Exception $e) {
             $this->logger->warning('Failed to fetch first email', [
                 'thread_id' => $threadId,

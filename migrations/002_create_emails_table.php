@@ -1,29 +1,36 @@
 <?php
 
 /**
- * Migration: Create emails table
+ * Migration: Create emails table (Production Schema)
  * 
- * Emails represent individual email messages within threads
- * provider_message_id: unique identifier from email provider (Power Automate)
- * internet_message_id: standard email Message-ID header
+ * Emails represent individual messages with full metadata from Microsoft Graph
  */
 
 return [
     'up' => "
-        CREATE TABLE IF NOT EXISTS emails (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            thread_id INT NOT NULL,
-            provider_message_id VARCHAR(255) NOT NULL UNIQUE,
-            internet_message_id VARCHAR(255),
-            raw_json TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
-            INDEX idx_provider_message_id (provider_message_id),
-            INDEX idx_internet_message_id (internet_message_id),
-            INDEX idx_thread_id (thread_id),
-            INDEX idx_created_at (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        CREATE TABLE emails (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            thread_id INT UNSIGNED NOT NULL,
+            direction ENUM('outbound','inbound','unknown') NOT NULL DEFAULT 'unknown',
+            graph_message_id VARCHAR(255) NULL,
+            internet_message_id VARCHAR(255) NULL,
+            subject VARCHAR(512) NULL,
+            from_email VARCHAR(255) NULL,
+            to_json JSON NULL,
+            cc_json JSON NULL,
+            bcc_json JSON NULL,
+            sent_at DATETIME NULL,
+            received_at DATETIME NULL,
+            body_preview TEXT NULL,
+            body_text MEDIUMTEXT NULL,
+            raw_payload JSON NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_emails_thread FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE,
+            UNIQUE KEY uniq_internet_message_id (internet_message_id),
+            UNIQUE KEY uniq_graph_message_id (graph_message_id),
+            KEY idx_thread_id (thread_id),
+            KEY idx_received_at (received_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ",
     
     'down' => "

@@ -1,8 +1,17 @@
 <?php
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+use App\Core\Database;
+use App\Services\MondayService;
+use App\Repositories\MondaySyncRepository;
+use App\Repositories\ThreadRepository;
+use App\Repositories\EmailRepository;
+use App\Repositories\EnrichmentRepository;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
 echo "=== Testing Monday.com API Connection ===\n\n";
@@ -68,20 +77,15 @@ if (isset($data['data']['boards'][0]['name'])) {
 echo "\n=== Testing thread sync ===\n\n";
 
 // Test syncing an existing thread
-use App\Core\Database;
-use App\Services\MondayService;
-use App\Repositories\MondaySyncRepository;
-use App\Repositories\ThreadRepository;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-
 $db = Database::getInstance();
 $logger = new Logger('test');
 $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
 
 $syncRepo = new MondaySyncRepository($db);
 $threadRepo = new ThreadRepository($db);
-$mondayService = new MondayService($syncRepo, $threadRepo, $logger);
+$emailRepo = new EmailRepository($db);
+$enrichmentRepo = new EnrichmentRepository($db);
+$mondayService = new MondayService($syncRepo, $threadRepo, $enrichmentRepo, $emailRepo, $logger);
 
 // Get a thread with external email
 $stmt = $db->query("SELECT * FROM threads WHERE external_email IS NOT NULL AND external_email != '' LIMIT 1");
