@@ -34,6 +34,12 @@ class MondayService
             'first_email' => $_ENV['MONDAY_COLUMN_FIRST_EMAIL'] ?? '',
             'status' => $_ENV['MONDAY_COLUMN_STATUS'] ?? '',
             'date' => $_ENV['MONDAY_COLUMN_DATE'] ?? '',
+            'first_name' => $_ENV['MONDAY_COLUMN_FIRST_NAME'] ?? '',
+            'last_name' => $_ENV['MONDAY_COLUMN_LAST_NAME'] ?? '',
+            'company' => $_ENV['MONDAY_COLUMN_COMPANY'] ?? '',
+            'job_title' => $_ENV['MONDAY_COLUMN_JOB_TITLE'] ?? '',
+            'message_id' => $_ENV['MONDAY_COLUMN_MESSAGE_ID'] ?? '',
+            'conversation_id' => $_ENV['MONDAY_COLUMN_CONVERSATION_ID'] ?? '',
         ];
     }
     
@@ -81,15 +87,72 @@ class MondayService
         // Get enrichment data if available
         $enrichment = $this->getEnrichmentData($thread['id']);
         
-        // Build item name: use full name if enriched, otherwise email
-        $itemName = $enrichment['full_name'] ?? $thread['external_email'] ?? $thread['subject_normalized'] ?? 'New Email Thread';
+        // Build item name: "Company - FirstName LastName"
+        $company = $enrichment['company_name'] ?? 'Unknown Company';
+        $fullName = $enrichment['full_name'] ?? $thread['external_email'];
+        $itemName = "$company - $fullName";
+        
+        // Get first email date from thread
+        $firstEmailDate = $thread['first_email_at'] ?? $thread['created_at'];
         
         // Build column values
-        $columnValues = [
-            $this->columnIds['subject'] => $thread['subject_normalized'] ?? '',
-            $this->columnIds['email'] => ['email' => $thread['external_email'] ?? '', 'text' => $thread['external_email'] ?? ''],
-            $this->columnIds['date'] => ['date' => date('Y-m-d', strtotime($thread['last_activity_at']))],
-        ];
+        $columnValues = [];
+        
+        // Always add these core fields
+        if (!empty($this->columnIds['subject'])) {
+            $columnValues[$this->columnIds['subject']] = $thread['subject_normalized'] ?? '';
+        }
+        
+        if (!empty($this->columnIds['email'])) {
+            $columnValues[$this->columnIds['email']] = [
+                'email' => $thread['external_email'] ?? '', 
+                'text' => $thread['external_email'] ?? ''
+            ];
+        }
+        
+        if (!empty($this->columnIds['date'])) {
+            $columnValues[$this->columnIds['date']] = [
+                'date' => date('Y-m-d', strtotime($thread['last_activity_at']))
+            ];
+        }
+        
+        if (!empty($this->columnIds['first_email']) && $firstEmailDate) {
+            $columnValues[$this->columnIds['first_email']] = [
+                'date' => date('Y-m-d', strtotime($firstEmailDate))
+            ];
+        }
+        
+        if (!empty($this->columnIds['body']) && !empty($thread['body_preview'])) {
+            $columnValues[$this->columnIds['body']] = $thread['body_preview'];
+        }
+        
+        // Add enrichment fields if available
+        if ($enrichment) {
+            if (!empty($this->columnIds['first_name']) && !empty($enrichment['first_name'])) {
+                $columnValues[$this->columnIds['first_name']] = $enrichment['first_name'];
+            }
+            
+            if (!empty($this->columnIds['last_name']) && !empty($enrichment['last_name'])) {
+                $columnValues[$this->columnIds['last_name']] = $enrichment['last_name'];
+            }
+            
+            if (!empty($this->columnIds['company']) && !empty($enrichment['company_name'])) {
+                $columnValues[$this->columnIds['company']] = $enrichment['company_name'];
+            }
+            
+            if (!empty($this->columnIds['job_title']) && !empty($enrichment['job_title'])) {
+                $columnValues[$this->columnIds['job_title']] = $enrichment['job_title'];
+            }
+        }
+        
+        // Add message ID and conversation ID
+        if (!empty($this->columnIds['message_id']) && !empty($thread['internet_message_id'])) {
+            $columnValues[$this->columnIds['message_id']] = $thread['internet_message_id'];
+        }
+        
+        if (!empty($this->columnIds['conversation_id']) && !empty($thread['conversation_id'])) {
+            $columnValues[$this->columnIds['conversation_id']] = $thread['conversation_id'];
+        }
         
         // Build GraphQL mutation
         $mutation = 'mutation {
