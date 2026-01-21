@@ -87,6 +87,9 @@ class MondayService
         // Get enrichment data if available
         $enrichment = $this->getEnrichmentData($thread['id']);
         
+        // Get first email for message ID, conversation ID, and body
+        $firstEmail = $this->getFirstEmail($thread['id']);
+        
         // Build item name: "Company - FirstName LastName"
         $company = $enrichment['company_name'] ?? 'Unknown Company';
         $fullName = $enrichment['full_name'] ?? $thread['external_email'];
@@ -122,8 +125,9 @@ class MondayService
             ];
         }
         
-        if (!empty($this->columnIds['body']) && !empty($thread['body_preview'])) {
-            $columnValues[$this->columnIds['body']] = $thread['body_preview'];
+        // Add email body from first email
+        if (!empty($this->columnIds['body']) && $firstEmail && !empty($firstEmail['body_preview'])) {
+            $columnValues[$this->columnIds['body']] = $firstEmail['body_preview'];
         }
         
         // Add enrichment fields if available
@@ -145,13 +149,14 @@ class MondayService
             }
         }
         
-        // Add message ID and conversation ID
-        if (!empty($this->columnIds['message_id']) && !empty($thread['internet_message_id'])) {
-            $columnValues[$this->columnIds['message_id']] = $thread['internet_message_id'];
+        // Add message ID and conversation ID from first email
+        if (!empty($this->columnIds['message_id']) && $firstEmail && !empty($firstEmail['internet_message_id'])) {
+            $columnValues[$this->columnIds['message_id']] = $firstEmail['internet_message_id'];
         }
         
-        if (!empty($this->columnIds['conversation_id']) && !empty($thread['conversation_id'])) {
-            $columnValues[$this->columnIds['conversation_id']] = $thread['conversation_id'];
+        if (!empty($this->columnIds['conversation_id']) && $firstEmail && !empty($firstEmail['graph_message_id'])) {
+            // Use graph_message_id as conversation ID (it's consistent across thread)
+            $columnValues[$this->columnIds['conversation_id']] = $firstEmail['graph_message_id'];
         }
         
         // Build GraphQL mutation
@@ -361,6 +366,33 @@ class MondayService
             return $result ?: null;
         } catch (\Exception $e) {
             $this->logger->warning('Failed to fetch enrichment data', [
+                'thread_id' => $threadId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Get first email for a thread
+     * 
+     * @param int $threadId
+     * @return array|null
+     */
+    private function getFirstEmail(int $threadId): ?array
+    {
+        try {
+            $stmt = $this->threadRepo->db->prepare('
+                SELECT * FROM emails 
+                WHERE thread_id = ? 
+                ORDER BY created_at ASC 
+                LIMIT 1
+            ');
+            $stmt->execute([$threadId]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to fetch first email', [
                 'thread_id' => $threadId,
                 'error' => $e->getMessage()
             ]);
