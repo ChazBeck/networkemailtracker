@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Services\WebhookService;
 use App\Services\MondayService;
+use App\Services\EnrichmentService;
 use App\Services\PayloadNormalizer;
 use Psr\Log\LoggerInterface;
 
@@ -11,16 +12,19 @@ class WebhookController
 {
     private WebhookService $webhookService;
     private ?MondayService $mondayService;
+    private ?EnrichmentService $enrichmentService;
     private LoggerInterface $logger;
     
     public function __construct(
         WebhookService $webhookService,
         LoggerInterface $logger,
-        ?MondayService $mondayService = null
+        ?MondayService $mondayService = null,
+        ?EnrichmentService $enrichmentService = null
     ) {
         $this->webhookService = $webhookService;
         $this->logger = $logger;
         $this->mondayService = $mondayService;
+        $this->enrichmentService = $enrichmentService;
     }
     
     /**
@@ -65,23 +69,41 @@ class WebhookController
             // Process webhook
             $result = $this->webhookService->processEmailWebhook($normalizedPayload);
             
-            // Auto-sync to Monday.com if enabled and not a duplicate
-            if ($this->mondayService && !$result['duplicate']) {
-                try {
-                    // Get the full thread data
-                    $thread = $this->webhookService->getThreadById($result['thread_id']);
-                    if ($thread && $thread['external_email']) {
+            // Auto-enrich contact and sync to Monday if not a duplicate
+            if (!$result['duplicate']) {
+                $thread = $this->webhookService->getThreadById($result['thread_id']);
+                
+                // Enrich contact with Perplexity AI
+                if ($this->enrichmentService && $thread && $thread['external_email']) {
+                    try {
+                        $enrichResult = $this->enrichmentService->enrichThread($thread);
+                        if ($enrichResult['success']) {
+                            $this->logger->info('Contact enriched', [
+                                'thread_id' => $result['thread_id'],
+                                'email' => $thread['external_email']
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        $this->logger->warning('Enrichment failed', [
+                            'thread_id' => $result['thread_id'],
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+                
+                // Sync to Monday.com
+                if ($this->mondayService && $thread && $thread['external_email']) {
+                    try {
                         $this->mondayService->syncThread($thread);
                         $this->logger->info('Auto-synced thread to Monday', [
                             'thread_id' => $result['thread_id']
                         ]);
+                    } catch (\Exception $e) {
+                        $this->logger->warning('Monday sync failed', [
+                            'thread_id' => $result['thread_id'],
+                            'error' => $e->getMessage()
+                        ]);
                     }
-                } catch (\Exception $e) {
-                    // Log but don't fail webhook if Monday sync fails
-                    $this->logger->warning('Monday sync failed', [
-                        'thread_id' => $result['thread_id'],
-                        'error' => $e->getMessage()
-                    ]);
                 }
             }
             

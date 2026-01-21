@@ -6,7 +6,7 @@ use PDO;
 
 class ThreadRepository
 {
-    private PDO $db;
+    public PDO $db; // Made public for MondayService enrichment queries
     
     public function __construct(PDO $db)
     {

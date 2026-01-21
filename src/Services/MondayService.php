@@ -78,8 +78,11 @@ class MondayService
      */
     private function createMondayItem(array $thread): array
     {
-        // Build item name (external email or subject)
-        $itemName = $thread['external_email'] ?: $thread['subject_normalized'] ?: 'New Email Thread';
+        // Get enrichment data if available
+        $enrichment = $this->getEnrichmentData($thread['id']);
+        
+        // Build item name: use full name if enriched, otherwise email
+        $itemName = $enrichment['full_name'] ?? $thread['external_email'] ?? $thread['subject_normalized'] ?? 'New Email Thread';
         
         // Build column values
         $columnValues = [
@@ -274,5 +277,31 @@ class MondayService
     public function getSyncStatus(): array
     {
         return $this->syncRepo->getAllWithThreadInfo();
+    }
+    
+    /**
+     * Get enrichment data for a thread
+     * 
+     * @param int $threadId
+     * @return array|null
+     */
+    private function getEnrichmentData(int $threadId): ?array
+    {
+        try {
+            $stmt = $this->threadRepo->db->prepare('
+                SELECT * FROM contact_enrichment 
+                WHERE thread_id = ? AND enrichment_status = "complete"
+                LIMIT 1
+            ');
+            $stmt->execute([$threadId]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to fetch enrichment data', [
+                'thread_id' => $threadId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 }
