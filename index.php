@@ -11,7 +11,12 @@ use App\Core\Database;
 use App\Core\Logger;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
+use App\Repositories\EnrichmentRepository;
+use App\Repositories\MondaySyncRepository;
 use App\Services\WebhookService;
+use App\Services\EnrichmentService;
+use App\Services\PerplexityService;
+use App\Services\MondayService;
 use App\Controllers\WebhookController;
 use App\Controllers\DashboardController;
 
@@ -26,13 +31,18 @@ $logger = Logger::getInstance();
 // Initialize repositories
 $threadRepo = new ThreadRepository($db);
 $emailRepo = new EmailRepository($db);
+$enrichmentRepo = new EnrichmentRepository($db);
+$syncRepo = new MondaySyncRepository($db);
 
 // Initialize services
 $webhookService = new WebhookService($threadRepo, $emailRepo, $logger);
+$perplexityService = new PerplexityService($logger);
+$enrichmentService = new EnrichmentService($enrichmentRepo, $threadRepo, $perplexityService, $logger);
+$mondayService = new MondayService($syncRepo, $threadRepo, $enrichmentRepo, $emailRepo, $logger);
 
 // Initialize controllers
-$webhookController = new WebhookController($webhookService, $logger);
-$dashboardController = new DashboardController($threadRepo, $emailRepo);
+$webhookController = new WebhookController($webhookService, $logger, $mondayService, $enrichmentService);
+$dashboardController = new DashboardController($threadRepo, $emailRepo, $enrichmentRepo);
 
 // Get request details
 $method = $_SERVER['REQUEST_METHOD'];
@@ -75,10 +85,19 @@ $router->get('/api/dashboard', function($params) use ($dashboardController) {
     $dashboardController->getData();
 });
 
-// Webhook endpoint
+// Webhook endpoints
+// Primary email webhook (Microsoft 365 via Power Automate)
 $router->post('/api/webhook/email', function($params) use ($webhookController) {
     $webhookController->ingest();
 });
+
+// Future webhook endpoints can be added here:
+// $router->post('/api/webhook/slack', function($params) use ($slackWebhookController) {
+//     $slackWebhookController->ingest();
+// });
+// $router->post('/api/webhook/salesforce', function($params) use ($salesforceWebhookController) {
+//     $salesforceWebhookController->ingest();
+// });
 
 // Dispatch request
 $router->dispatch($method, $uri);

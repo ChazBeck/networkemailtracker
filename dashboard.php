@@ -7,10 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
+<?php
+require_once __DIR__ . '/vendor/autoload.php';
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+?>
     <div class="container mx-auto px-4 py-8">
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">Email Tracking Dashboard</h1>
-            <p class="text-gray-600 mt-2">Monitoring networking@veerless.com</p>
+            <p class="text-gray-600 mt-2">Monitoring <?php echo htmlspecialchars($_ENV['INTERNAL_EMAIL'] ?? 'networking@veerless.com'); ?></p>
         </div>
 
         <!-- Threads with Emails -->
@@ -61,25 +66,48 @@
                 // Build nested view
                 container.innerHTML = data.threads.map(thread => {
                     const threadEmails = emailsByThread[thread.id] || [];
+                    const enrichment = data.enrichments[thread.id];
+                    
+                    // Build contact display - use enrichment if available
+                    const companyName = enrichment?.company_name || 'Unknown Company';
+                    const contactName = enrichment?.full_name || thread.external_email;
+                    const firstName = enrichment?.first_name || '';
+                    const lastName = enrichment?.last_name || '';
+                    const jobTitle = enrichment?.job_title || '';
                     
                     return `
                         <div class="mb-6 border border-gray-200 rounded-lg">
                             <!-- Thread Header -->
                             <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
                                 <div class="flex justify-between items-start">
-                                    <div>
-                                        <div class="font-semibold text-gray-900">${thread.subject_normalized || 'No Subject'}</div>
-                                        <div class="text-sm text-gray-600 mt-1">
-                                            ${thread.external_email} ↔ ${thread.internal_sender_email}
+                                    <div class="flex-1">
+                                        <!-- Company Name (Top Level) -->
+                                        <div class="text-lg font-bold text-gray-900 mb-2">
+                                            ${companyName}
+                                        </div>
+                                        
+                                        <!-- Contact Info -->
+                                        <div class="text-sm text-gray-700">
+                                            ${firstName || lastName ? 
+                                                `<span class="font-semibold">${firstName} ${lastName}</span>` : 
+                                                `<span class="font-semibold">${contactName}</span>`
+                                            }
+                                            ${jobTitle ? `<span class="text-gray-500"> · ${jobTitle}</span>` : ''}
+                                        </div>
+                                        
+                                        <!-- Email & Subject -->
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            ${thread.external_email} · ${thread.subject_normalized || 'No Subject'}
                                         </div>
                                     </div>
-                                    <div class="text-right">
+                                    <div class="text-right ml-4">
                                         <span class="px-2 py-1 text-xs rounded-full ${
                                             thread.status === 'Responded' ? 'bg-blue-100 text-blue-800' :
                                             thread.status === 'Closed' ? 'bg-gray-100 text-gray-800' :
                                             'bg-green-100 text-green-800'
                                         }">${thread.status}</span>
                                         <div class="text-xs text-gray-500 mt-1">${thread.email_count} message${thread.email_count !== 1 ? 's' : ''}</div>
+                                        ${enrichment ? '<div class="text-xs text-green-600 mt-1">✓ Enriched</div>' : ''}
                                     </div>
                                 </div>
                             </div>

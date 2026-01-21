@@ -160,7 +160,8 @@ class WebhookService
         }
         
         // Check if from internal domain
-        if (str_contains(strtolower($fromEmail), '@veerless.com')) {
+        $internalDomain = '@' . ($_ENV['INTERNAL_DOMAIN'] ?? 'veerless.com');
+        if (str_contains(strtolower($fromEmail), $internalDomain)) {
             return 'outbound';
         }
         
@@ -187,10 +188,12 @@ class WebhookService
         $internalEmail = '';
         $externalEmail = '';
         
+        $internalDomain = '@' . ($_ENV['INTERNAL_DOMAIN'] ?? 'veerless.com');
+        
         foreach ($allParticipants as $email) {
             $email = strtolower(trim($email));
             
-            if (str_contains($email, '@veerless.com')) {
+            if (str_contains($email, $internalDomain)) {
                 if (empty($internalEmail)) {
                     $internalEmail = $email;
                 }
@@ -256,5 +259,16 @@ class WebhookService
             ]);
             return null;
         }
+    }
+    
+    /**
+     * Get thread by ID (for Monday sync)
+     * 
+     * @param int $threadId
+     * @return array|null
+     */
+    public function getThreadById(int $threadId): ?array
+    {
+        return $this->threadRepo->findById($threadId);
     }
 }

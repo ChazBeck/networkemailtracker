@@ -137,4 +137,23 @@ class EmailRepository
         $stmt->execute([$limit]);
         return $stmt->fetchAll();
     }
+    
+    /**
+     * Get first email in a thread (chronologically)
+     * 
+     * @param int $threadId
+     * @return array|null
+     */
+    public function getFirstByThreadId(int $threadId): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT * FROM emails 
+            WHERE thread_id = ? 
+            ORDER BY created_at ASC 
+            LIMIT 1
+        ");
+        $stmt->execute([$threadId]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
 }
