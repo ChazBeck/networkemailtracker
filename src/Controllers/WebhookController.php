@@ -73,36 +73,47 @@ class WebhookController
             if (!$result['duplicate']) {
                 $thread = $this->webhookService->getThreadById($result['thread_id']);
                 
-                // Enrich contact with Perplexity AI
-                if ($this->enrichmentService && $thread && $thread['external_email']) {
-                    try {
-                        $enrichResult = $this->enrichmentService->enrichThread($thread);
-                        if ($enrichResult['success']) {
-                            $this->logger->info('Contact enriched', [
+                if ($thread && $thread['external_email']) {
+                    // Enrich contact with Perplexity AI (optional)
+                    if ($this->enrichmentService) {
+                        try {
+                            $enrichResult = $this->enrichmentService->enrichThread($thread);
+                            if ($enrichResult['success']) {
+                                $this->logger->info('Contact enriched', [
+                                    'thread_id' => $result['thread_id'],
+                                    'email' => $thread['external_email']
+                                ]);
+                            } else {
+                                $this->logger->debug('Enrichment skipped or failed', [
+                                    'thread_id' => $result['thread_id'],
+                                    'reason' => $enrichResult['error'] ?? 'unknown'
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            $this->logger->warning('Enrichment exception', [
                                 'thread_id' => $result['thread_id'],
-                                'email' => $thread['external_email']
+                                'error' => $e->getMessage()
+                            ]);
+                            // Continue to Monday sync even if enrichment fails
+                        }
+                    }
+                    
+                    // Sync to Monday.com (always try, even if enrichment failed)
+                    if ($this->mondayService) {
+                        try {
+                            $mondayResult = $this->mondayService->syncThread($thread);
+                            if ($mondayResult['success'] ?? false) {
+                                $this->logger->info('Auto-synced thread to Monday', [
+                                    'thread_id' => $result['thread_id'],
+                                    'monday_item_id' => $mondayResult['monday_item_id'] ?? null
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            $this->logger->error('Monday sync failed', [
+                                'thread_id' => $result['thread_id'],
+                                'error' => $e->getMessage()
                             ]);
                         }
-                    } catch (\Exception $e) {
-                        $this->logger->warning('Enrichment failed', [
-                            'thread_id' => $result['thread_id'],
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                }
-                
-                // Sync to Monday.com
-                if ($this->mondayService && $thread && $thread['external_email']) {
-                    try {
-                        $this->mondayService->syncThread($thread);
-                        $this->logger->info('Auto-synced thread to Monday', [
-                            'thread_id' => $result['thread_id']
-                        ]);
-                    } catch (\Exception $e) {
-                        $this->logger->warning('Monday sync failed', [
-                            'thread_id' => $result['thread_id'],
-                            'error' => $e->getMessage()
-                        ]);
                     }
                 }
             }
