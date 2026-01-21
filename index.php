@@ -11,6 +11,7 @@ use App\Core\Database;
 use App\Core\Logger;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
+use App\Repositories\EnrichmentRepository;
 use App\Services\WebhookService;
 use App\Controllers\WebhookController;
 use App\Controllers\DashboardController;
@@ -26,13 +27,14 @@ $logger = Logger::getInstance();
 // Initialize repositories
 $threadRepo = new ThreadRepository($db);
 $emailRepo = new EmailRepository($db);
+$enrichmentRepo = new EnrichmentRepository($db);
 
 // Initialize services
 $webhookService = new WebhookService($threadRepo, $emailRepo, $logger);
 
 // Initialize controllers
 $webhookController = new WebhookController($webhookService, $logger);
-$dashboardController = new DashboardController($threadRepo, $emailRepo);
+$dashboardController = new DashboardController($threadRepo, $emailRepo, $enrichmentRepo);
 
 // Get request details
 $method = $_SERVER['REQUEST_METHOD'];
