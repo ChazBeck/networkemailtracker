@@ -9,6 +9,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 use App\Core\Router;
 use App\Core\Database;
 use App\Core\Logger;
+use App\Core\ConfigValidator;
+use App\Core\HttpClient;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\EnrichmentRepository;
@@ -23,6 +25,33 @@ use App\Controllers\DashboardController;
 // Load environment variables
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
+
+// Validate configuration
+try {
+    $configValidator = new ConfigValidator();
+    
+    // Required configuration (DB_PASS can be empty for local dev with XAMPP)
+    $configValidator->validateRequired([
+        'DB_HOST',
+        'DB_NAME',
+        'DB_USER'
+    ]);
+    
+    // Optional configuration (log warnings but don't fail)
+    $logger = Logger::getInstance();
+    $configValidator->validateOptional([
+        'PERPLEXITY_API_KEY',
+        'MONDAY_API_KEY',
+        'MONDAY_BOARD_ID'
+    ], function($warning) use ($logger) {
+        $logger->warning($warning);
+    });
+    
+} catch (\App\Core\ConfigurationException $e) {
+    error_log($e->getMessage());
+    http_response_code(500);
+    die("Configuration error: " . $e->getMessage());
+}
 
 // Get PDO instance
 $db = Database::getInstance();

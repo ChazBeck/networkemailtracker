@@ -3,10 +3,11 @@
 namespace App\Repositories;
 
 use PDO;
+use App\Contracts\ThreadRepositoryInterface;
 
-class ThreadRepository
+class ThreadRepository implements ThreadRepositoryInterface
 {
-    public PDO $db; // Made public for MondayService enrichment queries
+    private PDO $db;
     
     public function __construct(PDO $db)
     {
@@ -121,5 +122,28 @@ class ThreadRepository
         $stmt->execute([$id]);
         $result = $stmt->fetch();
         return $result ?: null;
+    }
+    
+    /**
+     * Get threads that need enrichment
+     * Returns threads with external emails that don't have completed enrichment
+     * 
+     * @param int $limit Maximum number of threads to return
+     * @return array
+     */
+    public function getThreadsNeedingEnrichment(int $limit = 10): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT t.* 
+            FROM threads t
+            LEFT JOIN contact_enrichment ce ON t.id = ce.thread_id
+            WHERE t.external_email IS NOT NULL 
+            AND t.external_email != ''
+            AND (ce.id IS NULL OR ce.enrichment_status = 'failed')
+            ORDER BY t.created_at DESC
+            LIMIT ?
+        ");
+        $stmt->execute([$limit]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

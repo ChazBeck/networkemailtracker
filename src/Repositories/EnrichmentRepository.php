@@ -3,8 +3,9 @@
 namespace App\Repositories;
 
 use PDO;
+use App\Contracts\EnrichmentRepositoryInterface;
 
-class EnrichmentRepository
+class EnrichmentRepository implements EnrichmentRepositoryInterface
 {
     private PDO $db;
     

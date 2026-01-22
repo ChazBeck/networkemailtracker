@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Core\JsonResponse;
 use App\Services\WebhookService;
 use App\Services\MondayService;
 use App\Services\EnrichmentService;
@@ -46,12 +47,7 @@ class WebhookController
                     'payload_preview' => substr($rawPayload, 0, 200)
                 ]);
                 
-                http_response_code(400);
-                header('Content-Type: application/json');
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Invalid JSON'
-                ]);
+                JsonResponse::badRequest('Invalid JSON')->send();
                 return;
             }
             
@@ -119,15 +115,13 @@ class WebhookController
             }
             
             // Return 202 Accepted (webhook processed)
-            http_response_code(202);
-            header('Content-Type: application/json');
-            echo json_encode([
+            JsonResponse::accepted([
                 'success' => true,
                 'email_id' => $result['email_id'],
                 'thread_id' => $result['thread_id'],
                 'duplicate' => $result['duplicate'],
                 'message' => $result['duplicate'] ? 'Email already processed' : 'Email processed successfully'
-            ]);
+            ])->send();
             
         } catch (\PDOException $e) {
             $this->logger->error('Database error processing webhook', [
@@ -135,12 +129,7 @@ class WebhookController
                 'code' => $e->getCode()
             ]);
             
-            http_response_code(500);
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success' => false,
-                'error' => 'Database error'
-            ]);
+            JsonResponse::serverError('Database error')->send();
             
         } catch (\Exception $e) {
             $this->logger->error('Error processing webhook', [
@@ -148,12 +137,7 @@ class WebhookController
                 'trace' => $e->getTraceAsString()
             ]);
             
-            http_response_code(500);
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success' => false,
-                'error' => 'Internal server error'
-            ]);
+            JsonResponse::serverError('Internal server error')->send();
         }
     }
 }

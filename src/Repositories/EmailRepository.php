@@ -3,8 +3,9 @@
 namespace App\Repositories;
 
 use PDO;
+use App\Contracts\EmailRepositoryInterface;
 
-class EmailRepository
+class EmailRepository implements EmailRepositoryInterface
 {
     private PDO $db;
     

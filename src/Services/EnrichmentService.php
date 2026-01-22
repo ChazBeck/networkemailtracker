@@ -177,18 +177,8 @@ class EnrichmentService
         $this->logger->info('Starting batch enrichment', ['limit' => $limit]);
         
         // Get threads with external emails that aren't enriched yet
-        $stmt = $this->threadRepo->db->query("
-            SELECT t.* 
-            FROM threads t
-            LEFT JOIN contact_enrichment ce ON t.id = ce.thread_id
-            WHERE t.external_email IS NOT NULL 
-            AND t.external_email != ''
-            AND (ce.id IS NULL OR ce.enrichment_status = 'failed')
-            ORDER BY t.created_at DESC
-            LIMIT $limit
-        ");
+        $threads = $this->threadRepo->getThreadsNeedingEnrichment($limit);
         
-        $threads = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         $results = [
             'total' => count($threads),
             'enriched' => 0,

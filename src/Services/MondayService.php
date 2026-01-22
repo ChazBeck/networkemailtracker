@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Core\HttpClient;
 use App\Repositories\MondaySyncRepository;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EnrichmentRepository;
@@ -14,6 +15,7 @@ class MondayService
     private ThreadRepository $threadRepo;
     private EnrichmentRepository $enrichmentRepo;
     private EmailRepository $emailRepo;
+    private HttpClient $httpClient;
     private LoggerInterface $logger;
     private string $apiKey;
     private string $boardId;
@@ -24,13 +26,15 @@ class MondayService
         ThreadRepository $threadRepo,
         EnrichmentRepository $enrichmentRepo,
         EmailRepository $emailRepo,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?HttpClient $httpClient = null
     ) {
         $this->syncRepo = $syncRepo;
         $this->threadRepo = $threadRepo;
         $this->enrichmentRepo = $enrichmentRepo;
         $this->emailRepo = $emailRepo;
         $this->logger = $logger;
+        $this->httpClient = $httpClient ?? new HttpClient();
         
         // Load Monday.com configuration from environment
         $this->apiKey = $_ENV['MONDAY_API_KEY'] ?? '';
@@ -267,27 +271,19 @@ class MondayService
      */
     private function callMondayAPI(string $query): array
     {
-        $ch = curl_init('https://api.monday.com/v2');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: ' . $this->apiKey,
-                'Content-Type: application/json',
-                'API-Version: 2024-10'
-            ],
-            CURLOPT_POSTFIELDS => json_encode(['query' => $query])
-        ]);
+        $headers = [
+            'Authorization: ' . $this->apiKey,
+            'Content-Type: application/json',
+            'API-Version: 2024-10'
+        ];
         
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $result = $this->httpClient->post('https://api.monday.com/v2', ['query' => $query], $headers);
         
-        if ($httpCode !== 200) {
-            throw new \Exception("Monday API error: HTTP $httpCode - $response");
+        if (!$result['success']) {
+            throw new \Exception("Monday API error: " . $result['error'] . " - " . $result['body']);
         }
         
-        $data = json_decode($response, true);
+        $data = json_decode($result['body'], true);
         
         if (isset($data['errors'])) {
             throw new \Exception('Monday GraphQL error: ' . json_encode($data['errors']));

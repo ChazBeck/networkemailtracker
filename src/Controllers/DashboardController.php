@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Core\JsonResponse;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\EnrichmentRepository;
@@ -28,8 +29,6 @@ class DashboardController
      */
     public function getData(): void
     {
-        header('Content-Type: application/json');
-        
         $threads = $this->threadRepo->getAllWithEmailCount();
         $recentEmails = $this->emailRepo->getRecent(50);
         
@@ -42,7 +41,7 @@ class DashboardController
             }
         }
         
-        echo json_encode([
+        JsonResponse::success([
             'threads' => $threads,
             'emails' => $recentEmails,
             'enrichments' => $enrichments,
@@ -51,6 +50,6 @@ class DashboardController
                 'total_emails' => array_sum(array_column($threads, 'email_count')),
                 'enriched_contacts' => count($enrichments)
             ]
-        ]);
+        ])->send();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Core\HttpClient;
 use Psr\Log\LoggerInterface;
 
 class PerplexityService
@@ -9,13 +10,16 @@ class PerplexityService
     private string $apiKey;
     private string $apiUrl = 'https://api.perplexity.ai/chat/completions';
     private string $model;
+    private HttpClient $httpClient;
     private LoggerInterface $logger;
     
-    public function __construct(LoggerInterface $logger)
+    public function __construct(LoggerInterface $logger, ?HttpClient $httpClient = null)
     {
         $this->apiKey = $_ENV['PERPLEXITY_API_KEY'] ?? '';
         $this->model = $_ENV['PERPLEXITY_MODEL'] ?? 'sonar';
         $this->logger = $logger;
+        $this->httpClient = $httpClient ?? new HttpClient();
+        $this->httpClient->setTimeout(5)->setConnectTimeout(2);
         $this->apiUrl = 'https://api.perplexity.ai/chat/completions';
         
         if (empty($this->apiKey)) {

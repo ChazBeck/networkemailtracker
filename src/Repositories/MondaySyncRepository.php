@@ -3,8 +3,9 @@
 namespace App\Repositories;
 
 use PDO;
+use App\Contracts\MondaySyncRepositoryInterface;
 
-class MondaySyncRepository
+class MondaySyncRepository implements MondaySyncRepositoryInterface
 {
     private PDO $db;
     
