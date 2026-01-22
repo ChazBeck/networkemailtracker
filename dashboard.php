@@ -12,11 +12,36 @@ require_once __DIR__ . '/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 ?>
-    <div class="container mx-auto px-4 py-8">
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Email Tracking Dashboard</h1>
-            <p class="text-gray-600 mt-2">Monitoring <?php echo htmlspecialchars($_ENV['INTERNAL_EMAIL'] ?? 'networking@veerless.com'); ?></p>
+    <!-- Header with Logo -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <!-- Logo placeholder -->
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-xl">MT</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900">Mail Tracker</h1>
+                </div>
+            </div>
         </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white border-b border-gray-200">
+        <div class="container mx-auto px-4">
+            <div class="flex space-x-8">
+                <a href="dashboard.php" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
+                    Email Log
+                </a>
+                <a href="email-drafter.php" class="px-4 py-4 text-gray-600 hover:text-gray-900 font-medium">
+                    Email Drafter
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
 
         <!-- Threads with Emails -->
         <div class="bg-white rounded-lg shadow">
