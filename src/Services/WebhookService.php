@@ -4,21 +4,29 @@ namespace App\Services;
 
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
+use App\Tracking\Repositories\TrackingRepository;
+use App\Tracking\Services\TrackingService;
 use Psr\Log\LoggerInterface;
 
 class WebhookService
 {
     private ThreadRepository $threadRepo;
     private EmailRepository $emailRepo;
+    private TrackingRepository $trackingRepo;
+    private TrackingService $trackingService;
     private LoggerInterface $logger;
     
     public function __construct(
         ThreadRepository $threadRepo,
         EmailRepository $emailRepo,
+        TrackingRepository $trackingRepo,
+        TrackingService $trackingService,
         LoggerInterface $logger
     ) {
         $this->threadRepo = $threadRepo;
         $this->emailRepo = $emailRepo;
+        $this->trackingRepo = $trackingRepo;
+        $this->trackingService = $trackingService;
         $this->logger = $logger;
     }
     
@@ -133,6 +141,11 @@ class WebhookService
             ];
         }
         
+        // Activate tracking beacon if this is an outbound email
+        if ($direction === 'outbound') {
+            $this->activateTrackingBeacon($emailId, $data);
+        }
+        
         $this->logger->info('Email processed successfully', [
             'email_id' => $emailId,
             'thread_id' => $threadId,
@@ -235,6 +248,59 @@ class WebhookService
         $subject = strtolower(trim($subject));
         
         return empty($subject) ? null : $subject;
+    }
+    
+    /**
+     * Activate tracking beacon for outbound email
+     * 
+     * @param int $emailId Email record ID
+     * @param array $data Email data containing body_text
+     * @return void
+     */
+    private function activateTrackingBeacon(int $emailId, array $data): void
+    {
+        try {
+            // Extract beacon ID from email body
+            $bodyText = $data['body_text'] ?? null;
+            
+            if (empty($bodyText)) {
+                $this->logger->debug('No body_text available for beacon extraction', [
+                    'email_id' => $emailId
+                ]);
+                return;
+            }
+            
+            $beaconId = $this->trackingService->extractBeaconIdFromBody($bodyText);
+            
+            if (empty($beaconId)) {
+                $this->logger->warning('Failed to extract beacon ID from email body', [
+                    'email_id' => $emailId,
+                    'body_length' => strlen($bodyText)
+                ]);
+                return;
+            }
+            
+            // Activate the beacon
+            $activated = $this->trackingRepo->activateBeacon($beaconId, $emailId);
+            
+            if ($activated) {
+                $this->logger->info('Tracking beacon activated successfully', [
+                    'email_id' => $emailId,
+                    'beacon_id' => $beaconId
+                ]);
+            } else {
+                $this->logger->warning('Failed to activate tracking beacon', [
+                    'email_id' => $emailId,
+                    'beacon_id' => $beaconId
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Error activating tracking beacon', [
+                'email_id' => $emailId,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
     
     /**

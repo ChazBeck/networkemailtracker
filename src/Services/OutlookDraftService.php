@@ -3,12 +3,16 @@
 namespace App\Services;
 
 use App\Core\HttpClient;
+use App\Tracking\Repositories\TrackingRepository;
+use App\Tracking\Services\TrackingService;
 use Psr\Log\LoggerInterface;
 
 class OutlookDraftService
 {
     private HttpClient $httpClient;
     private LoggerInterface $logger;
+    private TrackingRepository $trackingRepo;
+    private TrackingService $trackingService;
     private string $tenantId;
     private string $clientId;
     private string $clientSecret;
@@ -23,12 +27,18 @@ class OutlookDraftService
         'tameka' => ''
     ];
     
-    // Safe HTML tags for email content
-    private string $allowedTags = '<p><br><strong><em><u><s><a><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><span><div>';
+    // Safe HTML tags for email content (including img for tracking beacon)
+    private string $allowedTags = '<p><br><strong><em><u><s><a><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><span><div><img>';
     
-    public function __construct(LoggerInterface $logger, ?HttpClient $httpClient = null)
-    {
+    public function __construct(
+        LoggerInterface $logger,
+        TrackingRepository $trackingRepo,
+        TrackingService $trackingService,
+        ?HttpClient $httpClient = null
+    ) {
         $this->logger = $logger;
+        $this->trackingRepo = $trackingRepo;
+        $this->trackingService = $trackingService;
         $this->httpClient = $httpClient ?? new HttpClient();
         
         $this->tenantId = $_ENV['MS_GRAPH_TENANT_ID'] ?? '';
@@ -63,11 +73,28 @@ class OutlookDraftService
             // Sanitize HTML content
             $sanitizedBody = $this->sanitizeHtml($htmlBody);
             
+            // Generate and inject tracking beacon
+            $beaconId = $this->trackingService->generateBeaconId();
+            $appUrl = $_ENV['APP_URL'] ?? 'https://yourdomain.com';
+            $beaconHtml = $this->trackingService->generateBeaconHtml($appUrl, $beaconId);
+            
+            // Append beacon to email body
+            $bodyWithBeacon = $sanitizedBody . $beaconHtml;
+            
+            // Create tracking record (draft status)
+            $this->trackingRepo->createBeacon($beaconId);
+            
+            $this->logger->info('Tracking beacon injected', [
+                'beacon_id' => $beaconId,
+                'user' => $userName,
+                'to' => $toEmail
+            ]);
+            
             $message = [
                 'subject' => $subject,
                 'body' => [
                     'contentType' => 'HTML',
-                    'content' => $sanitizedBody
+                    'content' => $bodyWithBeacon
                 ],
                 'toRecipients' => [
                     [

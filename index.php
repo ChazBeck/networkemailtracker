@@ -15,6 +15,9 @@ use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\EnrichmentRepository;
 use App\Repositories\MondaySyncRepository;
+use App\Tracking\Repositories\TrackingRepository;
+use App\Tracking\Services\TrackingService;
+use App\Tracking\Controllers\ImageController;
 use App\Services\WebhookService;
 use App\Services\EnrichmentService;
 use App\Services\PerplexityService;
@@ -73,18 +76,21 @@ $threadRepo = new ThreadRepository($db);
 $emailRepo = new EmailRepository($db);
 $enrichmentRepo = new EnrichmentRepository($db);
 $syncRepo = new MondaySyncRepository($db);
+$trackingRepo = new TrackingRepository($db, $logger);
 
 // Initialize services
-$webhookService = new WebhookService($threadRepo, $emailRepo, $logger);
+$trackingService = new TrackingService($logger);
+$webhookService = new WebhookService($threadRepo, $emailRepo, $trackingRepo, $trackingService, $logger);
 $perplexityService = new PerplexityService($logger);
 $enrichmentService = new EnrichmentService($enrichmentRepo, $threadRepo, $perplexityService, $logger);
 $mondayService = new MondayService($syncRepo, $threadRepo, $enrichmentRepo, $emailRepo, $logger);
-$outlookDraftService = new OutlookDraftService($logger);
+$outlookDraftService = new OutlookDraftService($logger, $trackingRepo, $trackingService);
 
 // Initialize controllers
 $webhookController = new WebhookController($webhookService, $logger, $mondayService, $enrichmentService);
-$dashboardController = new DashboardController($threadRepo, $emailRepo, $enrichmentRepo);
+$dashboardController = new DashboardController($threadRepo, $emailRepo, $enrichmentRepo, $trackingRepo);
 $draftController = new DraftController($outlookDraftService, $logger);
+$imageController = new ImageController($trackingRepo, $trackingService, $logger);
 
 // Get request details
 $method = $_SERVER['REQUEST_METHOD'];
@@ -136,6 +142,11 @@ $router->post('/api/webhook/email', function($params) use ($webhookController) {
 // Draft email creation endpoint
 $router->post('/api/draft/create', function($params) use ($draftController) {
     $draftController->create();
+});
+
+// Tracking beacon endpoint (disguised as image asset)
+$router->get('/public/img/spacer.gif', function($params) use ($imageController) {
+    $imageController->serveBeacon();
 });
 
 // Future webhook endpoints can be added here:
