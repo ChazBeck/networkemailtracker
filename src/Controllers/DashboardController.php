@@ -6,21 +6,25 @@ use App\Core\JsonResponse;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\EnrichmentRepository;
+use App\Repositories\LinkTrackingRepository;
 
 class DashboardController
 {
     private ThreadRepository $threadRepo;
     private EmailRepository $emailRepo;
     private EnrichmentRepository $enrichmentRepo;
+    private ?LinkTrackingRepository $linkTrackingRepo;
     
     public function __construct(
         ThreadRepository $threadRepo,
         EmailRepository $emailRepo,
-        EnrichmentRepository $enrichmentRepo
+        EnrichmentRepository $enrichmentRepo,
+        ?LinkTrackingRepository $linkTrackingRepo = null
     ) {
         $this->threadRepo = $threadRepo;
         $this->emailRepo = $emailRepo;
         $this->enrichmentRepo = $enrichmentRepo;
+        $this->linkTrackingRepo = $linkTrackingRepo;
     }
     
     /**
@@ -41,14 +45,23 @@ class DashboardController
             }
         }
         
+        // Get link tracking stats if available
+        $linkStats = null;
+        if ($this->linkTrackingRepo !== null) {
+            $linkStats = $this->linkTrackingRepo->getLinkStats();
+        }
+        
         JsonResponse::success([
             'threads' => $threads,
             'emails' => $recentEmails,
             'enrichments' => $enrichments,
+            'link_stats' => $linkStats,
             'stats' => [
                 'total_threads' => count($threads),
                 'total_emails' => array_sum(array_column($threads, 'email_count')),
-                'enriched_contacts' => count($enrichments)
+                'enriched_contacts' => count($enrichments),
+                'tracked_links' => $linkStats['total_links'] ?? 0,
+                'total_clicks' => $linkStats['total_clicks'] ?? 0
             ]
         ])->send();
     }

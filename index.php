@@ -95,7 +95,7 @@ $outlookDraftService = new OutlookDraftService($logger, $linkTrackingService);
 
 // Initialize controllers
 $webhookController = new WebhookController($webhookService, $logger, $mondayService, $enrichmentService);
-$dashboardController = new DashboardController($threadRepo, $emailRepo, $enrichmentRepo);
+$dashboardController = new DashboardController($threadRepo, $emailRepo, $enrichmentRepo, $linkTrackingRepo);
 $draftController = new DraftController($outlookDraftService, $logger);
 
 // Get request details
