@@ -151,12 +151,18 @@ class LinkTrackingService
         $parsedUrl = parse_url($url);
         $path = trim($parsedUrl['path'] ?? '', '/');
         
-        // Generate 6-character tracking code
-        $trackingCode = $this->generateTrackingCode(6);
+        // Generate 3-character tracking code
+        $trackingCode = $this->generateTrackingCode(3);
         
         // Create keyword: path + tracking code
-        // Example: "our-services" + "a1b2c3" = "our-services-a1b2c3"
-        $keyword = !empty($path) ? $path . '-' . $trackingCode : $trackingCode;
+        // For root domain (veerless.com or veerless.com/), use "home"
+        // Example: veerless.com → "home-abc"
+        // Example: veerless.com/our-services → "our-services-xyz"
+        if (empty($path)) {
+            $keyword = 'home-' . $trackingCode;
+        } else {
+            $keyword = $path . '-' . $trackingCode;
+        }
         
         // Sanitize keyword for YOURLS (lowercase, alphanumeric and hyphens only)
         $keyword = strtolower(preg_replace('/[^a-z0-9\-]/', '', str_replace('/', '-', $keyword)));
@@ -224,7 +230,7 @@ class LinkTrackingService
      * @param int $length Code length
      * @return string Lowercase alphanumeric code
      */
-    private function generateTrackingCode(int $length = 6): string
+    private function generateTrackingCode(int $length = 3): string
     {
         $characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
         $code = '';
