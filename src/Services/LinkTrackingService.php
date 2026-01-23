@@ -192,6 +192,25 @@ class LinkTrackingService
     }
     
     /**
+     * Normalize URL by ensuring it has a protocol
+     * 
+     * @param string $url Original URL
+     * @return string Normalized URL with protocol
+     */
+    private function normalizeUrl(string $url): string
+    {
+        $url = trim($url);
+        
+        // If URL already has a protocol, return as-is
+        if (preg_match('/^[a-z]+:\/\//i', $url)) {
+            return $url;
+        }
+        
+        // Add https:// if no protocol found
+        return 'https://' . $url;
+    }
+    
+    /**
      * Check if URL is a veerless.com domain
      */
     private function isVeerlessUrl(string $url): bool
