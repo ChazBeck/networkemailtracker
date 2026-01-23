@@ -35,9 +35,10 @@ class LinkTrackingService
      * 
      * @param string $htmlBody Original email HTML
      * @param int|null $emailId Email ID for tracking (optional, can be set later)
+     * @param string|null $draftId Draft ID for matching links to emails later
      * @return string Modified HTML with short URLs
      */
-    public function processLinks(string $htmlBody, ?int $emailId = null): string
+    public function processLinks(string $htmlBody, ?int $emailId = null, ?string $draftId = null): string
     {
         $this->processedLinks = [];
         
@@ -47,6 +48,7 @@ class LinkTrackingService
         
         $this->logger->info('Processing links in email HTML', [
             'email_id' => $emailId,
+            'draft_id' => $draftId,
             'html_length' => strlen($htmlBody)
         ]);
         
@@ -95,6 +97,7 @@ class LinkTrackingService
             // Store in database with normalized URL
             $this->linkRepo->create([
                 'email_id' => $emailId,
+                'draft_id' => $draftId,
                 'original_url' => $normalizedUrl,
                 'short_url' => $shortUrlData['shorturl'],
                 'yourls_keyword' => $shortUrlData['keyword'],

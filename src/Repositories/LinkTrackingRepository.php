@@ -31,6 +31,7 @@ class LinkTrackingRepository
             $stmt = $this->db->prepare("
                 INSERT INTO link_tracking (
                     email_id,
+                    draft_id,
                     original_url,
                     short_url,
                     yourls_keyword,
@@ -39,6 +40,7 @@ class LinkTrackingRepository
                     clicks
                 ) VALUES (
                     :email_id,
+                    :draft_id,
                     :original_url,
                     :short_url,
                     :yourls_keyword,
@@ -50,6 +52,7 @@ class LinkTrackingRepository
             
             $stmt->execute([
                 'email_id' => $data['email_id'] ?? null,
+                'draft_id' => $data['draft_id'] ?? null,
                 'original_url' => $data['original_url'],
                 'short_url' => $data['short_url'],
                 'yourls_keyword' => $data['yourls_keyword'],
@@ -73,6 +76,47 @@ class LinkTrackingRepository
                 'data' => $data
             ]);
             return null;
+        }
+    }
+    
+    /**
+     * Update email_id for links with matching draft_id
+     * 
+     * @param string $draftId Draft ID to match
+     * @param int $emailId Email ID to set
+     * @return int Number of links updated
+     */
+    public function linkDraftToEmail(string $draftId, int $emailId): int
+    {
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE link_tracking 
+                SET email_id = :email_id 
+                WHERE draft_id = :draft_id AND email_id IS NULL
+            ");
+            
+            $stmt->execute([
+                'email_id' => $emailId,
+                'draft_id' => $draftId
+            ]);
+            
+            $count = $stmt->rowCount();
+            
+            $this->logger->info('Linked draft to email', [
+                'draft_id' => $draftId,
+                'email_id' => $emailId,
+                'links_updated' => $count
+            ]);
+            
+            return $count;
+            
+        } catch (\PDOException $e) {
+            $this->logger->error('Failed to link draft to email', [
+                'error' => $e->getMessage(),
+                'draft_id' => $draftId,
+                'email_id' => $emailId
+            ]);
+            return 0;
         }
     }
     

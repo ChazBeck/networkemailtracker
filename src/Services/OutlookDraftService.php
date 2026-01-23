@@ -69,10 +69,14 @@ class OutlookDraftService
             $sanitizedBody = $this->sanitizeHtml($htmlBody);
             
             // Process links for tracking (if link tracking enabled)
+            $draftId = null;
             if ($this->linkTrackingService !== null) {
-                $sanitizedBody = $this->linkTrackingService->processLinks($sanitizedBody, null);
+                // Generate unique draft ID for matching later
+                $draftId = uniqid('draft_', true);
+                $sanitizedBody = $this->linkTrackingService->processLinks($sanitizedBody, null, $draftId);
                 $this->logger->info('Links processed for tracking', [
                     'user' => $userName,
+                    'draft_id' => $draftId,
                     'processed_count' => count($this->linkTrackingService->getProcessedLinks())
                 ]);
             }
@@ -118,12 +122,14 @@ class OutlookDraftService
                 'user' => $userName,
                 'to' => $toEmail,
                 'subject' => $subject,
-                'draft_id' => $response['id'] ?? null
+                'draft_id' => $response['id'] ?? null,
+                'tracking_draft_id' => $draftId
             ]);
             
             return [
                 'success' => true,
                 'draft_id' => $response['id'] ?? null,
+                'tracking_draft_id' => $draftId,
                 'message' => 'Draft created successfully in ' . $userName . "'s mailbox"
             ];
             
