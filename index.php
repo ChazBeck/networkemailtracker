@@ -7,10 +7,11 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Core\Router;
+use App\Core\Container;
+use App\Core\Config;
 use App\Core\Database;
 use App\Core\Logger;
 use App\Core\ConfigValidator;
-use App\Core\HttpClient;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\EnrichmentRepository;
@@ -43,12 +44,7 @@ try {
         'MS_GRAPH_TENANT_ID',
         'MS_GRAPH_CLIENT_ID',
         'MS_GRAPH_CLIENT_SECRET',
-        'MS_GRAPH_USER_CHARLIE',
-        'MS_GRAPH_USER_MARCY',
-        'MS_GRAPH_USER_ANN',
-        'MS_GRAPH_USER_KRISTEN',
-        'MS_GRAPH_USER_KATIE',
-        'MS_GRAPH_USER_TAMEKA'
+        'MS_GRAPH_USER_CHARLIE'
     ]);
     
     // Optional configuration (log warnings but don't fail)
@@ -56,7 +52,8 @@ try {
     $configValidator->validateOptional([
         'PERPLEXITY_API_KEY',
         'MONDAY_API_KEY',
-        'MONDAY_BOARD_ID'
+        'MONDAY_BOARD_ID',
+        'YOURLS_API_URL'
     ], function($warning) use ($logger) {
         $logger->warning($warning);
     });
@@ -67,36 +64,91 @@ try {
     die("Configuration error: " . $e->getMessage());
 }
 
-// Get PDO instance
-$db = Database::getInstance();
-$logger = Logger::getInstance();
+// Initialize container
+$container = new Container();
 
-// Initialize repositories
-$threadRepo = new ThreadRepository($db);
-$emailRepo = new EmailRepository($db);
-$enrichmentRepo = new EnrichmentRepository($db);
-$syncRepo = new MondaySyncRepository($db);
-$linkTrackingRepo = new LinkTrackingRepository($db, $logger);
+// Register core services
+$container->singleton('config', fn() => new Config($_ENV));
+$container->singleton('db', fn() => Database::getInstance());
+$container->singleton('logger', fn() => Logger::getInstance());
 
-// Initialize services
-$webhookService = new WebhookService($threadRepo, $emailRepo, $logger, $linkTrackingRepo);
-$perplexityService = new PerplexityService($logger);
-$enrichmentService = new EnrichmentService($enrichmentRepo, $threadRepo, $perplexityService, $logger);
-$mondayService = new MondayService($syncRepo, $threadRepo, $enrichmentRepo, $emailRepo, $logger);
+// Register repositories
+$container->singleton('threadRepo', fn($c) => new ThreadRepository($c->get('db')));
+$container->singleton('emailRepo', fn($c) => new EmailRepository($c->get('db')));
+$container->singleton('enrichmentRepo', fn($c) => new EnrichmentRepository($c->get('db')));
+$container->singleton('syncRepo', fn($c) => new MondaySyncRepository($c->get('db')));
+$container->singleton('linkTrackingRepo', fn($c) => new LinkTrackingRepository($c->get('db'), $c->get('logger')));
 
-// Initialize link tracking services (optional, requires YOURLS config)
-$linkTrackingService = null;
-if (!empty($_ENV['YOURLS_API_URL']) && !empty($_ENV['YOURLS_API_SIGNATURE'])) {
-    $yourlsClient = new YourlsClient($logger);
-    $linkTrackingService = new LinkTrackingService($yourlsClient, $linkTrackingRepo, $logger);
-}
+// Register services
+$container->singleton('webhookService', fn($c) => new WebhookService(
+    $c->get('threadRepo'),
+    $c->get('emailRepo'),
+    $c->get('logger'),
+    $c->get('linkTrackingRepo')
+));
 
-$outlookDraftService = new OutlookDraftService($logger, $linkTrackingService);
+$container->singleton('perplexityService', fn($c) => new PerplexityService($c->get('logger')));
 
-// Initialize controllers
-$webhookController = new WebhookController($webhookService, $logger, $mondayService, $enrichmentService);
-$dashboardController = new DashboardController($threadRepo, $emailRepo, $enrichmentRepo, $linkTrackingRepo, $yourlsClient ?? null);
-$draftController = new DraftController($outlookDraftService, $logger);
+$container->singleton('enrichmentService', fn($c) => new EnrichmentService(
+    $c->get('enrichmentRepo'),
+    $c->get('threadRepo'),
+    $c->get('perplexityService'),
+    $c->get('logger')
+));
+
+$container->singleton('mondayService', fn($c) => new MondayService(
+    $c->get('syncRepo'),
+    $c->get('threadRepo'),
+    $c->get('enrichmentRepo'),
+    $c->get('emailRepo'),
+    $c->get('logger')
+));
+
+// Register YOURLS services (optional)
+$container->singleton('yourlsClient', function($c) {
+    $config = $c->get('config');
+    return $config->yourls()->isConfigured() 
+        ? new YourlsClient($c->get('logger'))
+        : null;
+});
+
+$container->singleton('linkTrackingService', function($c) {
+    $yourlsClient = $c->get('yourlsClient');
+    return $yourlsClient 
+        ? new LinkTrackingService($yourlsClient, $c->get('linkTrackingRepo'), $c->get('logger'))
+        : null;
+});
+
+$container->singleton('outlookDraftService', fn($c) => new OutlookDraftService(
+    $c->get('logger'),
+    $c->get('linkTrackingService')
+));
+
+// Register controllers
+$container->register('webhookController', fn($c) => new WebhookController(
+    $c->get('webhookService'),
+    $c->get('logger'),
+    $c->get('mondayService'),
+    $c->get('enrichmentService')
+));
+
+$container->register('dashboardController', fn($c) => new DashboardController(
+    $c->get('threadRepo'),
+    $c->get('emailRepo'),
+    $c->get('enrichmentRepo'),
+    $c->get('linkTrackingRepo'),
+    $c->get('yourlsClient')
+));
+
+$container->register('draftController', fn($c) => new DraftController(
+    $c->get('outlookDraftService'),
+    $c->get('logger')
+));
+
+// Get controllers from container
+$webhookController = $container->get('webhookController');
+$dashboardController = $container->get('dashboardController');
+$draftController = $container->get('draftController');
 
 // Get request details
 $method = $_SERVER['REQUEST_METHOD'];
