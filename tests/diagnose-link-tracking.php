@@ -4,15 +4,29 @@
  * Diagnostic: Check link tracking setup on production
  */
 
-require_once __DIR__ . '/../vendor/autoload.php';
-
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->load();
-
-$db = App\Core\Database::getInstance();
+// Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 echo "🔍 Link Tracking Diagnostic\n";
 echo str_repeat('=', 60) . "\n\n";
+
+try {
+    echo "Loading autoloader...\n";
+    require_once __DIR__ . '/../vendor/autoload.php';
+    
+    echo "Loading environment variables...\n";
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+    $dotenv->load();
+    
+    echo "Connecting to database...\n";
+    $db = App\Core\Database::getInstance();
+    echo "✅ Database connected\n\n";
+} catch (Exception $e) {
+    echo "❌ ERROR: " . $e->getMessage() . "\n";
+    echo "Stack trace:\n" . $e->getTraceAsString() . "\n";
+    exit(1);
+}
 
 // 1. Check if draft_id column exists
 echo "1. Checking draft_id column...\n";
