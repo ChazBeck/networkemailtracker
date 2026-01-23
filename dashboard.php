@@ -43,11 +43,6 @@ $dotenv->load();
 
     <div class="container mx-auto px-4 py-8">
 
-        <!-- Stats Cards -->
-        <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            <!-- Will be populated by JavaScript -->
-        </div>
-
         <!-- Threads with Emails -->
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -76,35 +71,6 @@ $dotenv->load();
                 
                 const data = await response.json();
                 console.log('API Data:', data);
-                
-                // Populate stats cards
-                const statsContainer = document.getElementById('stats-container');
-                statsContainer.innerHTML = `
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <div class="text-sm text-gray-600 mb-1">Total Threads</div>
-                        <div class="text-2xl font-bold text-gray-900">${data.stats.total_threads || 0}</div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <div class="text-sm text-gray-600 mb-1">Total Emails</div>
-                        <div class="text-2xl font-bold text-gray-900">${data.stats.total_emails || 0}</div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <div class="text-sm text-gray-600 mb-1">Enriched Contacts</div>
-                        <div class="text-2xl font-bold text-green-600">${data.stats.enriched_contacts || 0}</div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <div class="text-sm text-gray-600 mb-1">Tracked Links</div>
-                        <div class="text-2xl font-bold text-blue-600">${data.stats.tracked_links || 0}</div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <div class="text-sm text-gray-600 mb-1">Total Clicks</div>
-                        <div class="text-2xl font-bold text-purple-600">${data.stats.total_clicks || 0}</div>
-                        ${data.stats.tracked_links > 0 ? 
-                            `<div class="text-xs text-gray-500 mt-1">${(data.stats.total_clicks / data.stats.tracked_links).toFixed(1)} avg per link</div>` 
-                            : ''
-                        }
-                    </div>
-                `;
                 
                 const container = document.getElementById('threads-container');
                 
@@ -185,6 +151,7 @@ $dotenv->load();
                                                         'bg-gray-100 text-gray-800'
                                                     }">${email.direction}</span>
                                                     <span class="text-sm font-medium text-gray-900">${email.from_email || 'N/A'}</span>
+                                                    ${getLinkBadge(email.id, data.links_by_email)}
                                                 </div>
                                                 <span class="text-xs text-gray-500">${formatDate(email.received_at || email.sent_at)}</span>
                                             </div>
@@ -206,6 +173,25 @@ $dotenv->load();
                         <p class="text-sm mt-2">${error.message}</p>
                         <p class="text-xs mt-2">Check browser console for details</p>
                     </div>`;
+            }
+        }
+        
+        function getLinkBadge(emailId, linksByEmail) {
+            if (!linksByEmail || !linksByEmail[emailId]) {
+                return '';
+            }
+            
+            const linkData = linksByEmail[emailId];
+            const hasClicks = linkData.clicks > 0;
+            
+            if (hasClicks) {
+                return `<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800" title="${linkData.clicks} clicks on ${linkData.count} link(s)">
+                    🔗 ${linkData.count} link${linkData.count !== 1 ? 's' : ''} · ${linkData.clicks} click${linkData.clicks !== 1 ? 's' : ''}
+                </span>`;
+            } else {
+                return `<span class="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-800" title="${linkData.count} tracked link(s), not clicked yet">
+                    🔗 ${linkData.count} link${linkData.count !== 1 ? 's' : ''} · no clicks
+                </span>`;
             }
         }
         

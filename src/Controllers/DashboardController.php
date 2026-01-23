@@ -45,23 +45,31 @@ class DashboardController
             }
         }
         
-        // Get link tracking stats if available
-        $linkStats = null;
+        // Get link tracking data per email if available
+        $linksByEmail = [];
         if ($this->linkTrackingRepo !== null) {
-            $linkStats = $this->linkTrackingRepo->getLinkStats();
+            foreach ($recentEmails as $email) {
+                $links = $this->linkTrackingRepo->getByEmailId($email['id']);
+                if (!empty($links)) {
+                    $totalClicks = array_sum(array_column($links, 'clicks'));
+                    $linksByEmail[$email['id']] = [
+                        'count' => count($links),
+                        'clicks' => $totalClicks,
+                        'links' => $links
+                    ];
+                }
+            }
         }
         
         JsonResponse::success([
             'threads' => $threads,
             'emails' => $recentEmails,
             'enrichments' => $enrichments,
-            'link_stats' => $linkStats,
+            'links_by_email' => $linksByEmail,
             'stats' => [
                 'total_threads' => count($threads),
                 'total_emails' => array_sum(array_column($threads, 'email_count')),
-                'enriched_contacts' => count($enrichments),
-                'tracked_links' => $linkStats['total_links'] ?? 0,
-                'total_clicks' => $linkStats['total_clicks'] ?? 0
+                'enriched_contacts' => count($enrichments)
             ]
         ])->send();
     }
