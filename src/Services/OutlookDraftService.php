@@ -9,6 +9,7 @@ class OutlookDraftService
 {
     private HttpClient $httpClient;
     private LoggerInterface $logger;
+    private ?LinkTrackingService $linkTrackingService;
     private string $tenantId;
     private string $clientId;
     private string $clientSecret;
@@ -26,9 +27,13 @@ class OutlookDraftService
     // Safe HTML tags for email content
     private string $allowedTags = '<p><br><strong><em><u><s><a><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><span><div>';
     
-    public function __construct(LoggerInterface $logger, ?HttpClient $httpClient = null)
-    {
+    public function __construct(
+        LoggerInterface $logger, 
+        ?LinkTrackingService $linkTrackingService = null,
+        ?HttpClient $httpClient = null
+    ) {
         $this->logger = $logger;
+        $this->linkTrackingService = $linkTrackingService;
         $this->httpClient = $httpClient ?? new HttpClient();
         
         $this->tenantId = $_ENV['MS_GRAPH_TENANT_ID'] ?? '';
@@ -62,6 +67,15 @@ class OutlookDraftService
             
             // Sanitize HTML content
             $sanitizedBody = $this->sanitizeHtml($htmlBody);
+            
+            // Process links for tracking (if link tracking enabled)
+            if ($this->linkTrackingService !== null) {
+                $sanitizedBody = $this->linkTrackingService->processLinks($sanitizedBody, null);
+                $this->logger->info('Links processed for tracking', [
+                    'user' => $userName,
+                    'processed_count' => count($this->linkTrackingService->getProcessedLinks())
+                ]);
+            }
             
             $message = [
                 'subject' => $subject,

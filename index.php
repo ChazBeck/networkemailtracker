@@ -15,11 +15,14 @@ use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\EnrichmentRepository;
 use App\Repositories\MondaySyncRepository;
+use App\Repositories\LinkTrackingRepository;
 use App\Services\WebhookService;
 use App\Services\EnrichmentService;
 use App\Services\PerplexityService;
 use App\Services\MondayService;
 use App\Services\OutlookDraftService;
+use App\Services\YourlsClient;
+use App\Services\LinkTrackingService;
 use App\Controllers\WebhookController;
 use App\Controllers\DashboardController;
 use App\Controllers\DraftController;
@@ -73,13 +76,22 @@ $threadRepo = new ThreadRepository($db);
 $emailRepo = new EmailRepository($db);
 $enrichmentRepo = new EnrichmentRepository($db);
 $syncRepo = new MondaySyncRepository($db);
+$linkTrackingRepo = new LinkTrackingRepository($db, $logger);
 
 // Initialize services
 $webhookService = new WebhookService($threadRepo, $emailRepo, $logger);
 $perplexityService = new PerplexityService($logger);
 $enrichmentService = new EnrichmentService($enrichmentRepo, $threadRepo, $perplexityService, $logger);
 $mondayService = new MondayService($syncRepo, $threadRepo, $enrichmentRepo, $emailRepo, $logger);
-$outlookDraftService = new OutlookDraftService($logger);
+
+// Initialize link tracking services (optional, requires YOURLS config)
+$linkTrackingService = null;
+if (!empty($_ENV['YOURLS_API_URL']) && !empty($_ENV['YOURLS_API_SIGNATURE'])) {
+    $yourlsClient = new YourlsClient($logger);
+    $linkTrackingService = new LinkTrackingService($yourlsClient, $linkTrackingRepo, $logger);
+}
+
+$outlookDraftService = new OutlookDraftService($logger, $linkTrackingService);
 
 // Initialize controllers
 $webhookController = new WebhookController($webhookService, $logger, $mondayService, $enrichmentService);
