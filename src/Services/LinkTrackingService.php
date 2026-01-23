@@ -158,14 +158,18 @@ class LinkTrackingService
         // For root domain (veerless.com or veerless.com/), use "home"
         // Example: veerless.com → "home-abc"
         // Example: veerless.com/our-services → "our-services-xyz"
+        // NOTE: YOURLS server configuration currently strips hyphens from keywords
+        // So "our-services-xyz" becomes "ourservicesxyz" - this is a YOURLS setting
         if (empty($path)) {
             $keyword = 'home-' . $trackingCode;
         } else {
             $keyword = $path . '-' . $trackingCode;
         }
         
-        // Sanitize keyword for YOURLS (lowercase, alphanumeric and hyphens only)
-        $keyword = strtolower(preg_replace('/[^a-z0-9\-]/', '', str_replace('/', '-', $keyword)));
+        // Sanitize keyword for YOURLS (lowercase, alphanumeric and hyphens)
+        $keyword = str_replace('/', '-', $keyword);
+        $keyword = strtolower($keyword);
+        $keyword = preg_replace('/[^a-z0-9-]/', '', $keyword);
         
         $result = $this->yourlsClient->createShortUrl($url, $keyword);
         
