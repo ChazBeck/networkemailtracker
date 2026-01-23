@@ -76,23 +76,26 @@ class LinkTrackingService
                 continue;
             }
             
-            // Check if URL is veerless.com or external
-            $isVeerless = $this->isVeerlessUrl($originalUrl);
+            // Normalize URL (add https:// if no protocol)
+            $normalizedUrl = $this->normalizeUrl($originalUrl);
             
-            // Generate short URL
-            $shortUrlData = $this->createShortUrl($originalUrl, $isVeerless);
+            // Check if URL is veerless.com or external  
+            $isVeerless = $this->isVeerlessUrl($normalizedUrl);
+            
+            // Generate short URL using normalized URL
+            $shortUrlData = $this->createShortUrl($normalizedUrl, $isVeerless);
             
             if ($shortUrlData === null) {
                 $this->logger->warning('Failed to create short URL, skipping', [
-                    'url' => $originalUrl
+                    'url' => $normalizedUrl
                 ]);
                 continue;
             }
             
-            // Store in database
+            // Store in database with normalized URL
             $this->linkRepo->create([
                 'email_id' => $emailId,
-                'original_url' => $originalUrl,
+                'original_url' => $normalizedUrl,
                 'short_url' => $shortUrlData['shorturl'],
                 'yourls_keyword' => $shortUrlData['keyword'],
                 'url_type' => $isVeerless ? 'veerless' : 'external',
