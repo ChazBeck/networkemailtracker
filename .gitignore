@@ -2,6 +2,7 @@
 /.env.production
 /.env.local
 /logs/*.log
+/logs/*.json
 *.log
 .DS_Store
 /public/uploads/*
