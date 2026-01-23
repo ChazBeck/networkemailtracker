@@ -190,6 +190,29 @@ class LinkTrackingRepository
     }
     
     /**
+     * Get all tracked links
+     * 
+     * @return array
+     */
+    public function getAllLinks(): array
+    {
+        try {
+            $stmt = $this->db->query("
+                SELECT id, yourls_keyword, clicks
+                FROM link_tracking
+                ORDER BY id DESC
+            ");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (\PDOException $e) {
+            $this->logger->error('Failed to get all links', [
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+    
+    /**
      * Update click count for a link
      * 
      * @param string $yourlsKeyword YOURLS keyword

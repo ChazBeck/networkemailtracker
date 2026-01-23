@@ -7,6 +7,7 @@ use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\EnrichmentRepository;
 use App\Repositories\LinkTrackingRepository;
+use App\Services\YourlsClient;
 
 class DashboardController
 {
@@ -14,17 +15,20 @@ class DashboardController
     private EmailRepository $emailRepo;
     private EnrichmentRepository $enrichmentRepo;
     private ?LinkTrackingRepository $linkTrackingRepo;
+    private ?YourlsClient $yourlsClient;
     
     public function __construct(
         ThreadRepository $threadRepo,
         EmailRepository $emailRepo,
         EnrichmentRepository $enrichmentRepo,
-        ?LinkTrackingRepository $linkTrackingRepo = null
+        ?LinkTrackingRepository $linkTrackingRepo = null,
+        ?YourlsClient $yourlsClient = null
     ) {
         $this->threadRepo = $threadRepo;
         $this->emailRepo = $emailRepo;
         $this->enrichmentRepo = $enrichmentRepo;
         $this->linkTrackingRepo = $linkTrackingRepo;
+        $this->yourlsClient = $yourlsClient;
     }
     
     /**
@@ -48,6 +52,9 @@ class DashboardController
         // Get link tracking data per email if available
         $linksByEmail = [];
         if ($this->linkTrackingRepo !== null) {
+            // Sync clicks from YOURLS for all links before displaying
+            $this->syncClicksFromYourls();
+            
             foreach ($recentEmails as $email) {
                 $links = $this->linkTrackingRepo->getByEmailId($email['id']);
                 if (!empty($links)) {
@@ -72,5 +79,41 @@ class DashboardController
                 'enriched_contacts' => count($enrichments)
             ]
         ])->send();
+    }
+    
+    /**
+     * Sync click counts from YOURLS to database
+     * Called on every dashboard load for real-time stats
+     */
+    private function syncClicksFromYourls(): void
+    {
+        if ($this->yourlsClient === null || $this->linkTrackingRepo === null) {
+            return;
+        }
+        
+        try {
+            // Get all links that need syncing (updated more than 1 minute ago or never)
+            $links = $this->linkTrackingRepo->getAllLinks();
+            
+            foreach ($links as $link) {
+                try {
+                    $stats = $this->yourlsClient->getStats($link['yourls_keyword']);
+                    
+                    if ($stats && isset($stats['clicks'])) {
+                        $newClicks = (int)$stats['clicks'];
+                        
+                        // Only update if clicks changed
+                        if ($newClicks != $link['clicks']) {
+                            $this->linkTrackingRepo->updateClicks($link['yourls_keyword'], $newClicks);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Silently skip errors for individual links
+                    continue;
+                }
+            }
+        } catch (\Exception $e) {
+            // Don't break dashboard if YOURLS sync fails
+        }
     }
 }
