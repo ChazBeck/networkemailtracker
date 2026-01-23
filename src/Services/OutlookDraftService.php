@@ -74,6 +74,10 @@ class OutlookDraftService
                 // Generate unique draft ID for matching later
                 $draftId = uniqid('draft_', true);
                 $sanitizedBody = $this->linkTrackingService->processLinks($sanitizedBody, null, $draftId);
+                
+                // Embed draft_id as hidden comment in HTML for webhook matching
+                $sanitizedBody = "<!-- tracking-draft-id:$draftId -->" . $sanitizedBody;
+                
                 $this->logger->info('Links processed for tracking', [
                     'user' => $userName,
                     'draft_id' => $draftId,

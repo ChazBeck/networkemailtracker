@@ -79,7 +79,7 @@ $syncRepo = new MondaySyncRepository($db);
 $linkTrackingRepo = new LinkTrackingRepository($db, $logger);
 
 // Initialize services
-$webhookService = new WebhookService($threadRepo, $emailRepo, $logger);
+$webhookService = new WebhookService($threadRepo, $emailRepo, $logger, $linkTrackingRepo);
 $perplexityService = new PerplexityService($logger);
 $enrichmentService = new EnrichmentService($enrichmentRepo, $threadRepo, $perplexityService, $logger);
 $mondayService = new MondayService($syncRepo, $threadRepo, $enrichmentRepo, $emailRepo, $logger);

@@ -4,22 +4,26 @@ namespace App\Services;
 
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
+use App\Repositories\LinkTrackingRepository;
 use Psr\Log\LoggerInterface;
 
 class WebhookService
 {
     private ThreadRepository $threadRepo;
     private EmailRepository $emailRepo;
+    private ?LinkTrackingRepository $linkTrackingRepo;
     private LoggerInterface $logger;
     
     public function __construct(
         ThreadRepository $threadRepo,
         EmailRepository $emailRepo,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ?LinkTrackingRepository $linkTrackingRepo = null
     ) {
         $this->threadRepo = $threadRepo;
         $this->emailRepo = $emailRepo;
         $this->logger = $logger;
+        $this->linkTrackingRepo = $linkTrackingRepo;
     }
     
     /**
@@ -132,6 +136,9 @@ class WebhookService
                 'duplicate' => true
             ];
         }
+        
+        // 6. Link draft links to this email if draft_id found in body
+        $this->linkDraftLinksToEmail($data['body_text'] ?? '', $emailId);
         
         $this->logger->info('Email processed successfully', [
             'email_id' => $emailId,
@@ -270,5 +277,39 @@ class WebhookService
     public function getThreadById(int $threadId): ?array
     {
         return $this->threadRepo->findById($threadId);
+    }
+    
+    /**
+     * Extract draft_id from email body and link draft links to email
+     * 
+     * @param string $bodyText Email body HTML
+     * @param int $emailId Email ID to link to
+     * @return void
+     */
+    private function linkDraftLinksToEmail(string $bodyText, int $emailId): void
+    {
+        if ($this->linkTrackingRepo === null) {
+            return;
+        }
+        
+        // Look for <!-- tracking-draft-id:draft_xxx --> in body
+        if (preg_match('/<!-- tracking-draft-id:([a-z0-9_\.]+) -->/', $bodyText, $matches)) {
+            $draftId = $matches[1];
+            
+            $this->logger->info('Found draft_id in email body, linking to email', [
+                'draft_id' => $draftId,
+                'email_id' => $emailId
+            ]);
+            
+            $count = $this->linkTrackingRepo->linkDraftToEmail($draftId, $emailId);
+            
+            if ($count > 0) {
+                $this->logger->info('Successfully linked draft links to email', [
+                    'draft_id' => $draftId,
+                    'email_id' => $emailId,
+                    'links_count' => $count
+                ]);
+            }
+        }
     }
 }
