@@ -121,6 +121,48 @@ class LinkTrackingRepository
     }
     
     /**
+     * Update email_id for link with matching short_url
+     * 
+     * @param string $shortUrl Short URL to match (e.g., https://veerl.es/p76)
+     * @param int $emailId Email ID to set
+     * @return int Number of links updated (should be 0 or 1)
+     */
+    public function linkShortUrlToEmail(string $shortUrl, int $emailId): int
+    {
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE link_tracking 
+                SET email_id = :email_id 
+                WHERE short_url = :short_url AND email_id IS NULL
+            ");
+            
+            $stmt->execute([
+                'email_id' => $emailId,
+                'short_url' => $shortUrl
+            ]);
+            
+            $count = $stmt->rowCount();
+            
+            if ($count > 0) {
+                $this->logger->info('Linked short URL to email', [
+                    'short_url' => $shortUrl,
+                    'email_id' => $emailId
+                ]);
+            }
+            
+            return $count;
+            
+        } catch (\PDOException $e) {
+            $this->logger->error('Failed to link short URL to email', [
+                'error' => $e->getMessage(),
+                'short_url' => $shortUrl,
+                'email_id' => $emailId
+            ]);
+            return 0;
+        }
+    }
+    
+    /**
      * Get all links for an email
      * 
      * @param int $emailId Email ID

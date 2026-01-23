@@ -281,6 +281,7 @@ class WebhookService
     
     /**
      * Extract draft_id from email body and link draft links to email
+     * Now uses the actual short URLs in the body to match links
      * 
      * @param string $bodyText Email body HTML
      * @param int $emailId Email ID to link to
@@ -292,7 +293,7 @@ class WebhookService
             return;
         }
         
-        // Look for <!-- tracking-draft-id:draft_xxx --> in body
+        // First try the HTML comment method (backwards compatibility)
         if (preg_match('/<!-- tracking-draft-id:([a-z0-9_\.]+) -->/', $bodyText, $matches)) {
             $draftId = $matches[1];
             
@@ -308,6 +309,30 @@ class WebhookService
                     'draft_id' => $draftId,
                     'email_id' => $emailId,
                     'links_count' => $count
+                ]);
+                return;
+            }
+        }
+        
+        // NEW: Match by extracting veerl.es links from body and looking them up
+        if (preg_match_all('/https?:\/\/veerl\.es\/[a-zA-Z0-9\-]+/', $bodyText, $matches)) {
+            $shortUrls = array_unique($matches[0]);
+            $linkedCount = 0;
+            
+            $this->logger->info('Found veerl.es links in email body, attempting to match', [
+                'email_id' => $emailId,
+                'short_urls' => $shortUrls
+            ]);
+            
+            foreach ($shortUrls as $shortUrl) {
+                $count = $this->linkTrackingRepo->linkShortUrlToEmail($shortUrl, $emailId);
+                $linkedCount += $count;
+            }
+            
+            if ($linkedCount > 0) {
+                $this->logger->info('Successfully linked short URLs to email', [
+                    'email_id' => $emailId,
+                    'links_count' => $linkedCount
                 ]);
             }
         }
