@@ -43,11 +43,11 @@ class EnrichmentService
             ];
         }
         
-        // Check if already enriched
+        // Check if THIS thread already has enrichment
         if (!$forceRefresh) {
-            $existing = $this->enrichmentRepo->findByThreadId($thread['id']);
-            if ($existing && $existing['enrichment_status'] === 'complete') {
-                $this->logger->debug('Contact already enriched', [
+            $existingForThread = $this->enrichmentRepo->findByThreadId($thread['id']);
+            if ($existingForThread && $existingForThread['enrichment_status'] === 'complete') {
+                $this->logger->debug('Thread already enriched', [
                     'thread_id' => $thread['id'],
                     'email' => $thread['external_email']
                 ]);
@@ -55,18 +55,39 @@ class EnrichmentService
                 return [
                     'success' => true,
                     'already_enriched' => true,
-                    'data' => $existing
+                    'data' => $existingForThread
                 ];
             }
         }
         
-        // Build context for enrichment
+        // Check if this EMAIL has been enriched before (in any other thread)
+        if (!$forceRefresh) {
+            $existingForEmail = $this->enrichmentRepo->findByEmail($thread['external_email']);
+            if ($existingForEmail && $existingForEmail['enrichment_status'] === 'complete') {
+                $this->logger->info('Email already enriched in another thread, copying data', [
+                    'thread_id' => $thread['id'],
+                    'email' => $thread['external_email'],
+                    'source_thread_id' => $existingForEmail['thread_id']
+                ]);
+                
+                // Copy the enrichment data to this thread
+                $enrichmentId = $this->copyEnrichmentToThread($thread, $existingForEmail);
+                
+                return [
+                    'success' => true,
+                    'copied_from_email' => true,
+                    'enrichment_id' => $enrichmentId,
+                    'data' => $existingForEmail
+                ];
+            }
+        }
+        
+        // No existing enrichment found - call Perplexity API
         $context = [
             'subject' => $thread['subject_normalized'] ?? '',
             'body_preview' => $thread['body_preview'] ?? ''
         ];
         
-        // Call Perplexity API
         $result = $this->perplexityService->enrichContact($thread['external_email'], $context);
         
         if ($result['success']) {
@@ -87,6 +108,37 @@ class EnrichmentService
                 'error' => $result['error']
             ];
         }
+    }
+    
+    /**
+     * Copy enrichment data from one thread to another
+     * Used when the same email appears in multiple threads
+     * 
+     * @param array $thread Target thread
+     * @param array $sourceEnrichment Source enrichment data
+     * @return int New enrichment ID
+     */
+    private function copyEnrichmentToThread(array $thread, array $sourceEnrichment): int
+    {
+        $enrichmentData = [
+            'thread_id' => $thread['id'],
+            'external_email' => $thread['external_email'],
+            'first_name' => $sourceEnrichment['first_name'],
+            'last_name' => $sourceEnrichment['last_name'],
+            'full_name' => $sourceEnrichment['full_name'],
+            'company_name' => $sourceEnrichment['company_name'],
+            'company_url' => $sourceEnrichment['company_url'],
+            'linkedin_url' => $sourceEnrichment['linkedin_url'],
+            'job_title' => $sourceEnrichment['job_title'],
+            'enrichment_source' => 'perplexity',
+            'enrichment_status' => 'complete',
+            'confidence_score' => $sourceEnrichment['confidence_score'],
+            'raw_prompt' => $sourceEnrichment['raw_prompt'],
+            'raw_response' => $sourceEnrichment['raw_response'],
+            'enriched_at' => date('Y-m-d H:i:s')
+        ];
+        
+        return $this->enrichmentRepo->create($enrichmentData);
     }
     
     /**
