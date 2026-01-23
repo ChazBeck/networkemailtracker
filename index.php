@@ -19,8 +19,10 @@ use App\Services\WebhookService;
 use App\Services\EnrichmentService;
 use App\Services\PerplexityService;
 use App\Services\MondayService;
+use App\Services\OutlookDraftService;
 use App\Controllers\WebhookController;
 use App\Controllers\DashboardController;
+use App\Controllers\DraftController;
 
 // Load environment variables
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
@@ -34,7 +36,16 @@ try {
     $configValidator->validateRequired([
         'DB_HOST',
         'DB_NAME',
-        'DB_USER'
+        'DB_USER',
+        'MS_GRAPH_TENANT_ID',
+        'MS_GRAPH_CLIENT_ID',
+        'MS_GRAPH_CLIENT_SECRET',
+        'MS_GRAPH_USER_CHARLIE',
+        'MS_GRAPH_USER_MARCY',
+        'MS_GRAPH_USER_ANN',
+        'MS_GRAPH_USER_KRISTEN',
+        'MS_GRAPH_USER_KATIE',
+        'MS_GRAPH_USER_TAMEKA'
     ]);
     
     // Optional configuration (log warnings but don't fail)
@@ -68,10 +79,12 @@ $webhookService = new WebhookService($threadRepo, $emailRepo, $logger);
 $perplexityService = new PerplexityService($logger);
 $enrichmentService = new EnrichmentService($enrichmentRepo, $threadRepo, $perplexityService, $logger);
 $mondayService = new MondayService($syncRepo, $threadRepo, $enrichmentRepo, $emailRepo, $logger);
+$outlookDraftService = new OutlookDraftService($logger);
 
 // Initialize controllers
 $webhookController = new WebhookController($webhookService, $logger, $mondayService, $enrichmentService);
 $dashboardController = new DashboardController($threadRepo, $emailRepo, $enrichmentRepo);
+$draftController = new DraftController($outlookDraftService, $logger);
 
 // Get request details
 $method = $_SERVER['REQUEST_METHOD'];
@@ -118,6 +131,11 @@ $router->get('/api/dashboard', function($params) use ($dashboardController) {
 // Primary email webhook (Microsoft 365 via Power Automate)
 $router->post('/api/webhook/email', function($params) use ($webhookController) {
     $webhookController->ingest();
+});
+
+// Draft email creation endpoint
+$router->post('/api/draft/create', function($params) use ($draftController) {
+    $draftController->create();
 });
 
 // Future webhook endpoints can be added here:
