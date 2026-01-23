@@ -46,8 +46,8 @@ class PayloadNormalizer
                 'received_at' => $data['ReceivedDateTime'] ?? $data['receivedDateTime'] ?? $payload['receivedDateTime'] ?? null,
                 // Support both formats: BodyPreview / bodyPreview
                 'body_preview' => $data['BodyPreview'] ?? $data['bodyPreview'] ?? $payload['bodyPreview'] ?? null,
-                // Support Body field
-                'body_text' => $data['Body'] ?? null,
+                // Extract body from nested raw JSON structure
+                'body_text' => self::extractBody($payload),
                 'web_link' => $data['webLink'] ?? $payload['webLink'] ?? null,
                 // Support both formats: HasAttachments / hasAttachments
                 'has_attachments' => $data['HasAttachments'] ?? $data['hasAttachments'] ?? $payload['hasAttachments'] ?? false,
@@ -56,6 +56,35 @@ class PayloadNormalizer
                 'raw_payload' => $payload
             ]
         ];
+    }
+    
+    /**
+     * Extract HTML body from nested payload structure
+     * Power Automate sends body in: payload.raw.body (JSON stringified)
+     * 
+     * @param array $payload
+     * @return string|null
+     */
+    private static function extractBody(array $payload): ?string
+    {
+        // Try direct Body field first
+        if (!empty($payload['Body'])) {
+            return $payload['Body'];
+        }
+        
+        if (!empty($payload['EmailDetails']['Body'])) {
+            return $payload['EmailDetails']['Body'];
+        }
+        
+        // Try to extract from raw JSON structure
+        if (!empty($payload['raw'])) {
+            $raw = is_string($payload['raw']) ? json_decode($payload['raw'], true) : $payload['raw'];
+            if (is_array($raw) && !empty($raw['body'])) {
+                return $raw['body'];
+            }
+        }
+        
+        return null;
     }
     
     /**
