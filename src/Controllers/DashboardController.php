@@ -65,7 +65,7 @@ class DashboardController
             'threads' => $threads,
             'emails' => $recentEmails,
             'enrichments' => $enrichments,
-            'links_by_email' => $linksByEmail,
+            'links_by_email' => (object)$linksByEmail, // Force object for empty array
             'stats' => [
                 'total_threads' => count($threads),
                 'total_emails' => array_sum(array_column($threads, 'email_count')),
