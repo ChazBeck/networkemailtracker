@@ -46,8 +46,8 @@ class PayloadNormalizer
                 'received_at' => $data['ReceivedDateTime'] ?? $data['receivedDateTime'] ?? $payload['receivedDateTime'] ?? null,
                 // Support both formats: BodyPreview / bodyPreview
                 'body_preview' => $data['BodyPreview'] ?? $data['bodyPreview'] ?? $payload['bodyPreview'] ?? null,
-                // Support Body field
-                'body_text' => $data['Body'] ?? null,
+                // Support Body field (multiple formats: Body, raw, body)
+                'body_text' => $data['Body'] ?? $data['raw'] ?? $data['body'] ?? $payload['raw'] ?? $payload['body'] ?? null,
                 'web_link' => $data['webLink'] ?? $payload['webLink'] ?? null,
                 // Support both formats: HasAttachments / hasAttachments
                 'has_attachments' => $data['HasAttachments'] ?? $data['hasAttachments'] ?? $payload['hasAttachments'] ?? false,
