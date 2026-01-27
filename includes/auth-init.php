@@ -7,9 +7,9 @@
 // Start session
 session_start();
 
-// Check if auth files exist (may not be present in all environments)
-$jwtIncludePath = __DIR__ . '/../auth/include/jwt_include.php';
-$configPath = __DIR__ . '/../auth/config.php';
+// Check if auth files exist (go up two levels from includes/ directory)
+$jwtIncludePath = __DIR__ . '/../../auth/include/jwt_include.php';
+$configPath = __DIR__ . '/../../auth/config.php';
 
 if (file_exists($jwtIncludePath) && file_exists($configPath)) {
     // Include JWT authentication
