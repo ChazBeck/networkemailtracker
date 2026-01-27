@@ -18,18 +18,17 @@ render_sso_header();
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 
+<!-- Email Drafter CSS for Navigation Styling -->
+<link href="public/css/email-drafter.css" rel="stylesheet">
+
 <body class="bg-gray-50">
 
     <!-- Navigation Bar -->
-    <nav class="bg-white border-b border-gray-200">
-        <div class="container mx-auto px-4">
-            <div class="flex space-x-8">
-                <a href="dashboard.php" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
-                    Email Log
-                </a>
-                <a href="email-drafter.php" class="px-4 py-4 text-gray-600 hover:text-gray-900 font-medium">
-                    Email Drafter
-                </a>
+    <nav class="nav">
+        <div class="nav-container">
+            <div class="nav-links">
+                <a href="dashboard.php" class="nav-link active">Email Log</a>
+                <a href="email-drafter.php" class="nav-link">Email Drafter</a>
             </div>
         </div>
     </nav>
