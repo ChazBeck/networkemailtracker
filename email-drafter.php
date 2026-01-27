@@ -1,44 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Drafter</title>
-    <!-- Quill Editor -->
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <link href="public/css/email-drafter.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-</head>
-<body>
 <?php
+// Load environment and dependencies
 require_once __DIR__ . '/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
-?>
-    <!-- Header with Logo -->
-    <header class="header">
-        <div class="header-container">
-            <div class="header-content">
-                <!-- Logo placeholder -->
-                <div class="logo">
-                    <span class="logo-text">MT</span>
-                </div>
-                <div>
-                    <h1 class="header-title">Mail Tracker</h1>
-                </div>
-            </div>
-        </div>
-    </header>
 
-    <!-- Navigation Bar -->
-    <nav class="nav">
-        <div class="nav-container">
-            <div class="nav-links">
-                <a href="dashboard.php" class="nav-link">Email Log</a>
-                <a href="email-drafter.php" class="nav-link active">Email Drafter</a>
-            </div>
-        </div>
-    </nav>
+// Initialize SSO authentication
+require_once __DIR__ . '/includes/auth-init.php';
+
+// Include SSO header
+require_once __DIR__ . '/../auth/header-with-sso.php';
+
+// Render SSO head and header with custom CSS/JS for Quill Editor
+render_sso_head('Email Drafter - Mail Tracker', [
+    'css' => [
+        'https://cdn.quilljs.com/1.3.6/quill.snow.css',
+        'public/css/email-drafter.css'
+    ],
+    'js' => [
+        'https://cdn.quilljs.com/1.3.6/quill.js'
+    ]
+]);
+render_sso_header();
+?>
+
+<body>
 
     <div class="container">
         <!-- Email Creator -->

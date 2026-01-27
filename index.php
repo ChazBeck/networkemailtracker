@@ -177,13 +177,21 @@ $router->get('/health', function($params) {
     ]);
 });
 
-// Dashboard
+// Protected Dashboard Pages (require SSO authentication)
 $router->get('/', function($params) {
+    // Authentication is handled within dashboard.php itself
     require __DIR__ . '/dashboard.php';
 });
 
 $router->get('/dashboard', function($params) {
+    // Authentication is handled within dashboard.php itself
     require __DIR__ . '/dashboard.php';
+});
+
+// Email Drafter Page (require SSO authentication)
+$router->get('/email-drafter', function($params) {
+    // Authentication is handled within email-drafter.php itself
+    require __DIR__ . '/email-drafter.php';
 });
 
 // Dashboard API

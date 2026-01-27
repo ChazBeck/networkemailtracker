@@ -1,45 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Tracking Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50">
 <?php
+// Load environment and dependencies
 require_once __DIR__ . '/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
-?>
-    <!-- Header with Logo -->
-    <header class="bg-white shadow-sm">
-        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <!-- Logo placeholder -->
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <span class="text-white font-bold text-xl">MT</span>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold text-gray-900">Mail Tracker</h1>
-                </div>
-            </div>
-        </div>
-    </header>
 
-    <!-- Navigation Bar -->
-    <nav class="bg-white border-b border-gray-200">
-        <div class="container mx-auto px-4">
-            <div class="flex space-x-8">
-                <a href="dashboard.php" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
-                    Email Log
-                </a>
-                <a href="email-drafter.php" class="px-4 py-4 text-gray-600 hover:text-gray-900 font-medium">
-                    Email Drafter
-                </a>
-            </div>
-        </div>
-    </nav>
+// Initialize SSO authentication
+require_once __DIR__ . '/includes/auth-init.php';
+
+// Include SSO header
+require_once __DIR__ . '/../auth/header-with-sso.php';
+
+// Render SSO head and header
+render_sso_head('Email Tracking Dashboard - Mail Tracker');
+render_sso_header();
+?>
+
+<body class="bg-gray-50">
 
     <div class="container mx-auto px-4 py-8">
 
