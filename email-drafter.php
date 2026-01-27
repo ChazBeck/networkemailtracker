@@ -22,6 +22,16 @@ render_sso_header();
 
 <body>
 
+    <!-- Navigation Bar -->
+    <nav class="nav">
+        <div class="nav-container">
+            <div class="nav-links">
+                <a href="dashboard.php" class="nav-link">Email Log</a>
+                <a href="email-drafter.php" class="nav-link active">Email Drafter</a>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
         <!-- Email Creator -->
         <div class="card">
