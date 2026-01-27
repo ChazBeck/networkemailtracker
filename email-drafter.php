@@ -10,18 +10,15 @@ require_once __DIR__ . '/includes/auth-init.php';
 // Include SSO header
 require_once __DIR__ . '/../auth/header-with-sso.php';
 
-// Render SSO head and header with custom CSS/JS for Quill Editor
-render_sso_head('Email Drafter - Mail Tracker', [
-    'css' => [
-        'https://cdn.quilljs.com/1.3.6/quill.snow.css',
-        'public/css/email-drafter.css'
-    ],
-    'js' => [
-        'https://cdn.quilljs.com/1.3.6/quill.js'
-    ]
-]);
+// Render SSO head and header
+render_sso_head('Email Drafter - Mail Tracker');
 render_sso_header();
 ?>
+
+<!-- Quill Editor CSS & JS -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<link href="public/css/email-drafter.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 <body>
 

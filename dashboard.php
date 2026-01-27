@@ -10,14 +10,13 @@ require_once __DIR__ . '/includes/auth-init.php';
 // Include SSO header
 require_once __DIR__ . '/../auth/header-with-sso.php';
 
-// Render SSO head and header with Tailwind CSS
-render_sso_head('Email Tracking Dashboard - Mail Tracker', [
-    'js' => [
-        'https://cdn.tailwindcss.com'
-    ]
-]);
+// Render SSO head and header
+render_sso_head('Email Tracking Dashboard - Mail Tracker');
 render_sso_header();
 ?>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
 
 <body class="bg-gray-50">
 
