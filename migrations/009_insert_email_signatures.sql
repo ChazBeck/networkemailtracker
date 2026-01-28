@@ -27,9 +27,9 @@ Mobile</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 312.882.0826<br>
 </p>
 </td>
 <td style="padding: 0in 5.4pt; vertical-align: top;">
-<p style="margin: 0in; font-family: Calibri, sans-serif; font-size: 11pt;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
 <br>
-<span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.linkedin.com/in/marcytwete" style="color: blue;"><img src="cid:marcy-linkedin" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i>&nbsp;</i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.instagram.com/meetveerless" style="color: blue;"><img src="cid:marcy-instagram" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i>&nbsp;</i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.twitter.com/marcytwete" style="color: blue;"><img src="cid:marcy-twitter" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span>
+<span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.linkedin.com/in/marcytwete" style="color: blue;"><img src="cid:marcy-linkedin" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i>&nbsp;</i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.instagram.com/meetveerless" style="color: blue;"><img src="cid:marcy-instagram" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span>
 </p>
 </td>
 </tr>
@@ -57,15 +57,15 @@ INSERT INTO sync_state (name, value, updated_at) VALUES (
 <td style="padding: 0in 5.4pt; vertical-align: top; width: 2.5in;">
 <p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
 <span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><i><br>
-Mobile</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [PHONE]<br>
+Mobile</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 612.384.7671<br>
 <i>Email</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="mailto:charlie@veerless.com" style="color: blue;">charlie@veerless.com</a></u></span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><br>
 <i>Website</i>: &nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a></u></span>
 </p>
 </td>
 <td style="padding: 0in 5.4pt; vertical-align: top;">
-<p style="margin: 0in; font-family: Calibri, sans-serif; font-size: 11pt;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
 <br>
-<span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.linkedin.com/in/charlieveerless" style="color: blue;"><img src="cid:charlie-linkedin" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i>&nbsp;</i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.instagram.com/meetveerless" style="color: blue;"><img src="cid:charlie-instagram" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i>&nbsp;</i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.twitter.com/charlieveerless" style="color: blue;"><img src="cid:charlie-twitter" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span>
+<span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.linkedin.com/in/charlieveerless" style="color: blue;"><img src="cid:charlie-linkedin" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i>&nbsp;</i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.instagram.com/meetveerless" style="color: blue;"><img src="cid:charlie-instagram" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span>
 </p>
 </td>
 </tr>
@@ -93,15 +93,15 @@ INSERT INTO sync_state (name, value, updated_at) VALUES (
 <td style="padding: 0in 5.4pt; vertical-align: top; width: 2.5in;">
 <p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
 <span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><i><br>
-Mobile</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [PHONE]<br>
+Mobile</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 801.949.3111<br>
 <i>Email</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="mailto:ann@veerless.com" style="color: blue;">ann@veerless.com</a></u></span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><br>
 <i>Website</i>: &nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a></u></span>
 </p>
 </td>
 <td style="padding: 0in 5.4pt; vertical-align: top;">
-<p style="margin: 0in; font-family: Calibri, sans-serif; font-size: 11pt;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
 <br>
-<span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.linkedin.com/in/annveerless" style="color: blue;"><img src="cid:ann-linkedin" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i>&nbsp;</i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.instagram.com/meetveerless" style="color: blue;"><img src="cid:ann-instagram" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i>&nbsp;</i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.twitter.com/annveerless" style="color: blue;"><img src="cid:ann-twitter" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span>
+<span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.linkedin.com/in/annveerless" style="color: blue;"><img src="cid:ann-linkedin" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i>&nbsp;</i></span><span style="font-family: Helvetica, sans-serif; font-size: 9pt;"><i><u><a href="http://www.instagram.com/meetveerless" style="color: blue;"><img src="cid:ann-instagram" width="40" height="40" style="width: 40px; height: 40px;"></a></u></i></span>
 </p>
 </td>
 </tr>
@@ -117,6 +117,7 @@ INSERT INTO sync_state (name, value, updated_at) VALUES (
 <span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);">
 <strong>Kristen</strong><br>
 Veerless<br>
+<i>Mobile</i>: 701.799.7361<br>
 <i>Email</i>: <a href="mailto:kristen@veerless.com" style="color: blue;">kristen@veerless.com</a><br>
 <i>Website</i>: <a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a>
 </span>
@@ -145,6 +146,7 @@ INSERT INTO sync_state (name, value, updated_at) VALUES (
 <span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);">
 <strong>Tameka</strong><br>
 Veerless<br>
+<i>Mobile</i>: 612.275.6053<br>
 <i>Email</i>: <a href="mailto:tameka@veerless.com" style="color: blue;">tameka@veerless.com</a><br>
 <i>Website</i>: <a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a>
 </span>
