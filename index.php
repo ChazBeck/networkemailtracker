@@ -121,6 +121,7 @@ $container->singleton('linkTrackingService', function($c) {
 
 $container->singleton('outlookDraftService', fn($c) => new OutlookDraftService(
     $c->get('logger'),
+    $c->get('db'),
     $c->get('linkTrackingService')
 ));
 

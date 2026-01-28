@@ -10,6 +10,7 @@ class OutlookDraftService
     private HttpClient $httpClient;
     private LoggerInterface $logger;
     private ?LinkTrackingService $linkTrackingService;
+    private \PDO $db;
     private string $tenantId;
     private string $clientId;
     private string $clientSecret;
@@ -24,15 +25,17 @@ class OutlookDraftService
         'tameka' => ''
     ];
     
-    // Safe HTML tags for email content
-    private string $allowedTags = '<p><br><strong><em><u><s><a><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><span><div>';
+    // Safe HTML tags for email content (includes <img> for signatures)
+    private string $allowedTags = '<p><br><strong><em><u><s><a><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><span><div><img><table><tbody><tr><td>';
     
     public function __construct(
-        LoggerInterface $logger, 
+        LoggerInterface $logger,
+        \PDO $db,
         ?LinkTrackingService $linkTrackingService = null,
         ?HttpClient $httpClient = null
     ) {
         $this->logger = $logger;
+        $this->db = $db;
         $this->linkTrackingService = $linkTrackingService;
         $this->httpClient = $httpClient ?? new HttpClient();
         
@@ -67,6 +70,14 @@ class OutlookDraftService
             
             // Sanitize HTML content
             $sanitizedBody = $this->sanitizeHtml($htmlBody);
+            
+            // Get user signature
+            $signatureData = $this->getUserSignature($userKey);
+            
+            // Append signature HTML to body
+            if ($signatureData && !empty($signatureData['html'])) {
+                $sanitizedBody .= "<br><br>" . $signatureData['html'];
+            }
             
             // Process links for tracking (if link tracking enabled)
             $draftId = null;
@@ -121,18 +132,40 @@ class OutlookDraftService
             }
             
             $response = json_decode($result['body'], true);
+            $messageId = $response['id'] ?? null;
+            
+            // Add inline attachments for signature images
+            if ($messageId && $signatureData && !empty($signatureData['attachments'])) {
+                foreach ($signatureData['attachments'] as $attachment) {
+                    $attachResult = $this->addInlineAttachment(
+                        $userEmail,
+                        $messageId,
+                        $attachment['path'],
+                        $attachment['cid'],
+                        $token
+                    );
+                    
+                    if (!$attachResult['success']) {
+                        $this->logger->warning('Failed to attach signature image', [
+                            'cid' => $attachment['cid'],
+                            'error' => $attachResult['error'] ?? 'Unknown'
+                        ]);
+                    }
+                }
+            }
             
             $this->logger->info('Draft created successfully', [
                 'user' => $userName,
                 'to' => $toEmail,
                 'subject' => $subject,
-                'draft_id' => $response['id'] ?? null,
-                'tracking_draft_id' => $draftId
+                'draft_id' => $messageId,
+                'tracking_draft_id' => $draftId,
+                'signature_attachments' => count($signatureData['attachments'] ?? [])
             ]);
             
             return [
                 'success' => true,
-                'draft_id' => $response['id'] ?? null,
+                'draft_id' => $messageId,
                 'tracking_draft_id' => $draftId,
                 'message' => 'Draft created successfully in ' . $userName . "'s mailbox"
             ];
@@ -160,13 +193,148 @@ class OutlookDraftService
         // Strip tags except allowed ones
         $html = strip_tags($html, $this->allowedTags);
         
-        // Remove javascript: protocol from links
-        $html = preg_replace('/href\s*=\s*["\']javascript:[^"\']*["\']/i', 'href="#"', $html);
+        // Remove javascript: protocol from links and images
+        $html = preg_replace('/href\s*=\s*["\']javascript:[^"\']*["\']]/i', 'href="#"', $html);
+        $html = preg_replace('/src\s*=\s*["\']javascript:[^"\']*["\']]/i', 'src="#"', $html);
         
         return $html;
     }
+        /**
+     * Get user signature HTML and inline attachment data
+     * 
+     * @param string $userName User key (lowercase username)
+     * @return array|null ['html' => string, 'attachments' => array] or null
+     */
+    private function getUserSignature(string $userName): ?array
+    {
+        try {
+            $signatureKey = 'signature_' . strtolower($userName);
+            $stmt = $this->db->prepare("SELECT value FROM sync_state WHERE name = ?");
+            $stmt->execute([$signatureKey]);
+            $signatureHtml = $stmt->fetchColumn();
+            
+            if (!$signatureHtml) {
+                return null;
+            }
+            
+            // Parse signature HTML to find CID references
+            $attachments = [];
+            $signatureDir = __DIR__ . '/../../public/signatures/';
+            
+            // Extract all cid: references from img tags
+            preg_match_all('/src=["\']cid:([^"\']+)["\']/i', $signatureHtml, $matches);
+            
+            if (!empty($matches[1])) {
+                foreach ($matches[1] as $cid) {
+                    // Map CID to file path (e.g., "marcy-logo" -> "marcy-logo.png")
+                    $possibleExtensions = ['png', 'jpg', 'jpeg', 'gif'];
+                    $filePath = null;
+                    
+                    foreach ($possibleExtensions as $ext) {
+                        $testPath = $signatureDir . $cid . '.' . $ext;
+                        if (file_exists($testPath)) {
+                            $filePath = $testPath;
+                            break;
+                        }
+                    }
+                    
+                    if ($filePath && file_exists($filePath)) {
+                        $attachments[] = [
+                            'cid' => $cid,
+                            'path' => $filePath
+                        ];
+                    } else {
+                        $this->logger->warning('Signature image not found', [
+                            'user' => $userName,
+                            'cid' => $cid
+                        ]);
+                    }
+                }
+            }
+            
+            return [
+                'html' => $signatureHtml,
+                'attachments' => $attachments
+            ];
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get user signature', [
+                'user' => $userName,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
     
-    private function getAccessToken(): ?string
+    /**
+     * Add an inline attachment to an existing draft message
+     * 
+     * @param string $userEmail User's email address
+     * @param string $messageId Draft message ID
+     * @param string $filePath Path to image file
+     * @param string $contentId Content-ID for cid: reference
+     * @param string $token Access token
+     * @return array ['success' => bool, 'error' => string]
+     */
+    private function addInlineAttachment(
+        string $userEmail,
+        string $messageId,
+        string $filePath,
+        string $contentId,
+        string $token
+    ): array {
+        try {
+            if (!file_exists($filePath)) {
+                return [
+                    'success' => false,
+                    'error' => 'File not found: ' . $filePath
+                ];
+            }
+            
+            $imageData = file_get_contents($filePath);
+            $base64Image = base64_encode($imageData);
+            $fileName = basename($filePath);
+            
+            // Determine MIME type
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $filePath);
+            finfo_close($finfo);
+            
+            $attachment = [
+                '@odata.type' => '#microsoft.graph.fileAttachment',
+                'name' => $fileName,
+                'contentType' => $mimeType,
+                'contentBytes' => $base64Image,
+                'contentId' => $contentId,
+                'isInline' => true
+            ];
+            
+            $result = $this->httpClient->post(
+                "https://graph.microsoft.com/v1.0/users/{$userEmail}/messages/{$messageId}/attachments",
+                $attachment,
+                [
+                    'Authorization: Bearer ' . $token,
+                    'Content-Type: application/json'
+                ]
+            );
+            
+            if (!$result['success']) {
+                return [
+                    'success' => false,
+                    'error' => $result['error'] ?? 'Unknown error'
+                ];
+            }
+            
+            return ['success' => true];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+        private function getAccessToken(): ?string
     {
         // Check cached token
         if (file_exists($this->tokenCacheFile)) {
