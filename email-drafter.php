@@ -20,6 +20,19 @@ render_sso_header();
 <link href="public/css/email-drafter.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
+<style>
+    /* Aptos font definition */
+    .ql-font-aptos {
+        font-family: Aptos, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    
+    /* Set default editor font */
+    .ql-editor {
+        font-family: Aptos, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 11pt;
+    }
+</style>
+
 <body>
 
     <!-- Navigation Bar -->
@@ -75,6 +88,11 @@ render_sso_header();
     </div>
 
     <script>
+        // Register Aptos font with Quill
+        var Font = Quill.import('formats/font');
+        Font.whitelist = ['aptos'];
+        Quill.register(Font, true);
+
         // Initialize Quill editor
         var quill = new Quill('#editor', {
             theme: 'snow',
@@ -90,6 +108,11 @@ render_sso_header();
             },
             placeholder: 'Type your email content here...'
         });
+
+        // Set default font to Aptos 11pt
+        quill.format('font', 'aptos');
+        quill.root.style.fontFamily = 'Aptos, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        quill.root.style.fontSize = '11pt';
 
         // Track active user
         let activeUser = 'charlie';
