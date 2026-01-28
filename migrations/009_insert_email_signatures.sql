@@ -46,7 +46,7 @@ INSERT INTO sync_state (name, value, updated_at) VALUES (
 <tr>
 <td colspan="3" style="padding: 0in 5.4pt; vertical-align: top;">
 <p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
-<img src="cid:charlie-logo" width="342" height="79" style="width: 342px; height: 79px;">
+<img src="cid:charlie-logo" width="625" height="144" style="width: 625px; height: 144px;">
 </p>
 </td>
 </tr>
@@ -118,7 +118,7 @@ INSERT INTO sync_state (name, value, updated_at) VALUES (
 <tr>
 <td colspan="2" style="padding: 0in 5.4pt; vertical-align: top;">
 <p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
-<img src="cid:kristen-logo" width="342" height="79" style="width: 342px; height: 79px;">
+<img src="cid:kristen-logo" width="625" height="144" style="width: 625px; height: 144px;">
 </p>
 </td>
 </tr>
@@ -148,7 +148,7 @@ INSERT INTO sync_state (name, value, updated_at) VALUES (
 <tr>
 <td colspan="2" style="padding: 0in 5.4pt; vertical-align: top;">
 <p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
-<img src="cid:katie-logo" width="342" height="79" style="width: 342px; height: 79px;">
+<img src="cid:katie-logo" width="625" height="144" style="width: 625px; height: 144px;">
 </p>
 </td>
 </tr>
@@ -177,7 +177,7 @@ INSERT INTO sync_state (name, value, updated_at) VALUES (
 <tr>
 <td colspan="2" style="padding: 0in 5.4pt; vertical-align: top;">
 <p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
-<img src="cid:tameka-logo" width="342" height="79" style="width: 342px; height: 79px;">
+<img src="cid:tameka-logo" width="625" height="144" style="width: 625px; height: 144px;">
 </p>
 </td>
 </tr>
