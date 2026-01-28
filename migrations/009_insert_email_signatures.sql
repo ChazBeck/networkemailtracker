@@ -110,46 +110,91 @@ Mobile</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 801.949.3111<br>
     NOW()
 ) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW();
 
--- Kristen's signature (template - customize as needed)
+-- Kristen's signature
 INSERT INTO sync_state (name, value, updated_at) VALUES (
     'signature_kristen',
-    '<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
-<span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);">
-<strong>Kristen</strong><br>
-Veerless<br>
-<i>Mobile</i>: 701.799.7361<br>
-<i>Email</i>: <a href="mailto:kristen@veerless.com" style="color: blue;">kristen@veerless.com</a><br>
-<i>Website</i>: <a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a>
-</span>
-</p>',
+    '<table style="box-sizing: border-box; border-collapse: collapse; border-spacing: 0px;">
+<tbody>
+<tr>
+<td colspan="2" style="padding: 0in 5.4pt; vertical-align: top;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
+<img src="cid:kristen-logo" width="342" height="79" style="width: 342px; height: 79px;">
+</p>
+</td>
+</tr>
+<tr>
+<td style="padding: 0in 5.4pt; vertical-align: top; width: 13.25pt;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">&nbsp;</p>
+</td>
+<td style="padding: 0in 5.4pt; vertical-align: top; width: 2.5in;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
+<span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><i><br>
+Mobile</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 701.799.7361<br>
+<i>Email</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="mailto:kristen@veerless.com" style="color: blue;">kristen@veerless.com</a></u></span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><br>
+<i>Website</i>: &nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a></u></span>
+</p>
+</td>
+</tr>
+</tbody>
+</table>',
     NOW()
 ) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW();
 
--- Katie's signature (template - customize as needed)
+-- Katie's signature
 INSERT INTO sync_state (name, value, updated_at) VALUES (
     'signature_katie',
-    '<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
-<span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);">
-<strong>Katie</strong><br>
-Veerless<br>
-<i>Email</i>: <a href="mailto:katie@veerless.com" style="color: blue;">katie@veerless.com</a><br>
-<i>Website</i>: <a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a>
-</span>
-</p>',
+    '<table style="box-sizing: border-box; border-collapse: collapse; border-spacing: 0px;">
+<tbody>
+<tr>
+<td colspan="2" style="padding: 0in 5.4pt; vertical-align: top;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
+<img src="cid:katie-logo" width="342" height="79" style="width: 342px; height: 79px;">
+</p>
+</td>
+</tr>
+<tr>
+<td style="padding: 0in 5.4pt; vertical-align: top; width: 13.25pt;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">&nbsp;</p>
+</td>
+<td style="padding: 0in 5.4pt; vertical-align: top; width: 2.5in;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
+<span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><i><br>
+Email</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="mailto:katie@veerless.com" style="color: blue;">katie@veerless.com</a></u></span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><br>
+<i>Website</i>: &nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a></u></span>
+</p>
+</td>
+</tr>
+</tbody>
+</table>',
     NOW()
 ) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW();
 
--- Tameka's signature (template - customize as needed)
+-- Tameka's signature
 INSERT INTO sync_state (name, value, updated_at) VALUES (
     'signature_tameka',
-    '<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
-<span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);">
-<strong>Tameka</strong><br>
-Veerless<br>
-<i>Mobile</i>: 612.275.6053<br>
-<i>Email</i>: <a href="mailto:tameka@veerless.com" style="color: blue;">tameka@veerless.com</a><br>
-<i>Website</i>: <a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a>
-</span>
-</p>',
+    '<table style="box-sizing: border-box; border-collapse: collapse; border-spacing: 0px;">
+<tbody>
+<tr>
+<td colspan="2" style="padding: 0in 5.4pt; vertical-align: top;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
+<img src="cid:tameka-logo" width="342" height="79" style="width: 342px; height: 79px;">
+</p>
+</td>
+</tr>
+<tr>
+<td style="padding: 0in 5.4pt; vertical-align: top; width: 13.25pt;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">&nbsp;</p>
+</td>
+<td style="padding: 0in 5.4pt; vertical-align: top; width: 2.5in;">
+<p style="margin: 0in; font-family: Aptos, sans-serif; font-size: 11pt;">
+<span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><i><br>
+Mobile</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 612.275.6053<br>
+<i>Email</i>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="mailto:tameka@veerless.com" style="color: blue;">tameka@veerless.com</a></u></span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: rgb(59, 56, 56);"><br>
+<i>Website</i>: &nbsp;&nbsp;&nbsp; </span><span style="font-family: Aptos, sans-serif; font-size: 10pt; color: blue;"><u><a href="http://www.veerless.com/" style="color: blue;">www.veerless.com</a></u></span>
+</p>
+</td>
+</tr>
+</tbody>
+</table>',
     NOW()
 ) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW();
