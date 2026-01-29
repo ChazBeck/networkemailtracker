@@ -37,48 +37,56 @@ class DashboardController
      */
     public function getData(): void
     {
-        $threads = $this->threadRepo->getAllWithEmailCount();
-        $recentEmails = $this->emailRepo->getRecent(50);
-        
-        // Get enrichment data for all threads
-        $enrichments = [];
-        foreach ($threads as $thread) {
-            $enrichment = $this->enrichmentRepo->findByThreadId($thread['id']);
-            if ($enrichment && $enrichment['enrichment_status'] === 'complete') {
-                $enrichments[$thread['id']] = $enrichment;
-            }
-        }
-        
-        // Get link tracking data per email if available
-        $linksByEmail = [];
-        if ($this->linkTrackingRepo !== null) {
-            // Sync clicks from YOURLS for all links before displaying
-            $this->syncClicksFromYourls();
+        try {
+            $threads = $this->threadRepo->getAllWithEmailCount();
+            $recentEmails = $this->emailRepo->getRecent(50);
             
-            foreach ($recentEmails as $email) {
-                $links = $this->linkTrackingRepo->getByEmailId($email['id']);
-                if (!empty($links)) {
-                    $totalClicks = array_sum(array_column($links, 'clicks'));
-                    $linksByEmail[$email['id']] = [
-                        'count' => count($links),
-                        'clicks' => $totalClicks,
-                        'links' => $links
-                    ];
+            // Get enrichment data for all threads
+            $enrichments = [];
+            foreach ($threads as $thread) {
+                $enrichment = $this->enrichmentRepo->findByThreadId($thread['id']);
+                if ($enrichment && $enrichment['enrichment_status'] === 'complete') {
+                    $enrichments[$thread['id']] = $enrichment;
                 }
             }
+            
+            // Get link tracking data per email if available
+            $linksByEmail = [];
+            if ($this->linkTrackingRepo !== null) {
+                // Sync clicks from YOURLS for all links before displaying
+                $this->syncClicksFromYourls();
+                
+                foreach ($recentEmails as $email) {
+                    $links = $this->linkTrackingRepo->getByEmailId($email['id']);
+                    if (!empty($links)) {
+                        $totalClicks = array_sum(array_column($links, 'clicks'));
+                        $linksByEmail[$email['id']] = [
+                            'count' => count($links),
+                            'clicks' => $totalClicks,
+                            'links' => $links
+                        ];
+                    }
+                }
+            }
+            
+            JsonResponse::success([
+                'threads' => $threads,
+                'emails' => $recentEmails,
+                'enrichments' => $enrichments,
+                'links_by_email' => (object)$linksByEmail, // Force object for empty array
+                'stats' => [
+                    'total_threads' => count($threads),
+                    'total_emails' => array_sum(array_column($threads, 'email_count')),
+                    'enriched_contacts' => count($enrichments)
+                ]
+            ])->send();
+        } catch (\PDOException $e) {
+            error_log("Database error in getData: " . $e->getMessage());
+            JsonResponse::error('Database error: ' . $e->getMessage(), 500)->send();
+        } catch (\Exception $e) {
+            error_log("Error in getData: " . $e->getMessage());
+            JsonResponse::error('Server error: ' . $e->getMessage(), 500)->send();
         }
-        
-        JsonResponse::success([
-            'threads' => $threads,
-            'emails' => $recentEmails,
-            'enrichments' => $enrichments,
-            'links_by_email' => (object)$linksByEmail, // Force object for empty array
-            'stats' => [
-                'total_threads' => count($threads),
-                'total_emails' => array_sum(array_column($threads, 'email_count')),
-                'enriched_contacts' => count($enrichments)
-            ]
-        ])->send();
     }
     
     /**
