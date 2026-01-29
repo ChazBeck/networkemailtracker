@@ -200,6 +200,11 @@ $router->get('/api/dashboard', function($params) use ($dashboardController) {
     $dashboardController->getData();
 });
 
+// Get single email details
+$router->get('/api/emails/{id}', function($params) use ($dashboardController) {
+    $dashboardController->getEmail((int)$params['id']);
+});
+
 // Webhook endpoints
 // Primary email webhook (Microsoft 365 via Power Automate)
 $router->post('/api/webhook/email', function($params) use ($webhookController) {

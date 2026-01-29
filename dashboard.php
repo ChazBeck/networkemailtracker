@@ -46,6 +46,23 @@ render_sso_header();
         </div>
     </div>
 
+    <!-- Email Detail Modal -->
+    <div id="email-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Email Details</h3>
+                <button onclick="closeEmailModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="email-modal-content" class="text-center text-gray-500">
+                Loading...
+            </div>
+        </div>
+    </div>
+
     <script>
         async function loadDashboard() {
             try {
@@ -134,7 +151,7 @@ render_sso_header();
                                 ${threadEmails.length === 0 ? 
                                     '<div class="px-4 py-3 text-sm text-gray-500">No messages loaded</div>' :
                                     threadEmails.map(email => `
-                                        <div class="px-4 py-3 hover:bg-gray-50">
+                                        <div class="px-4 py-3 hover:bg-gray-50 cursor-pointer" onclick="viewEmail(${email.id})">
                                             <div class="flex justify-between items-start mb-1">
                                                 <div class="flex items-center gap-2">
                                                     <span class="px-2 py-1 text-xs rounded-full ${
@@ -197,6 +214,128 @@ render_sso_header();
             if (!str) return 'N/A';
             return str.length > length ? str.substring(0, length) + '...' : str;
         }
+        
+        // View email in modal
+        async function viewEmail(emailId) {
+            const modal = document.getElementById('email-modal');
+            const content = document.getElementById('email-modal-content');
+            
+            // Show modal with loading state
+            modal.classList.remove('hidden');
+            content.innerHTML = '<div class="text-center text-gray-500">Loading email...</div>';
+            
+            try {
+                const response = await fetch(`api/emails/${emailId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const email = data.email;
+                const links = data.links || [];
+                
+                // Format recipients
+                const toRecipients = email.to_json ? JSON.parse(email.to_json).map(r => r.emailAddress?.address || r).join(', ') : 'N/A';
+                const ccRecipients = email.cc_json ? JSON.parse(email.cc_json).map(r => r.emailAddress?.address || r).join(', ') : '';
+                const bccRecipients = email.bcc_json ? JSON.parse(email.bcc_json).map(r => r.emailAddress?.address || r).join(', ') : '';
+                
+                content.innerHTML = `
+                    <div class="space-y-4 text-left">
+                        <!-- Email Header -->
+                        <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-1 text-xs rounded-full ${
+                                    email.direction === 'inbound' ? 'bg-blue-100 text-blue-800' :
+                                    email.direction === 'outbound' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-gray-100 text-gray-800'
+                                }">${email.direction}</span>
+                                <span class="text-xs text-gray-500">${formatDate(email.received_at || email.sent_at)}</span>
+                            </div>
+                            <div>
+                                <span class="text-sm font-semibold text-gray-700">From:</span>
+                                <span class="text-sm text-gray-900">${email.from_email || 'N/A'}</span>
+                            </div>
+                            <div>
+                                <span class="text-sm font-semibold text-gray-700">To:</span>
+                                <span class="text-sm text-gray-900">${toRecipients}</span>
+                            </div>
+                            ${ccRecipients ? `
+                                <div>
+                                    <span class="text-sm font-semibold text-gray-700">CC:</span>
+                                    <span class="text-sm text-gray-900">${ccRecipients}</span>
+                                </div>
+                            ` : ''}
+                            ${bccRecipients ? `
+                                <div>
+                                    <span class="text-sm font-semibold text-gray-700">BCC:</span>
+                                    <span class="text-sm text-gray-900">${bccRecipients}</span>
+                                </div>
+                            ` : ''}
+                            <div>
+                                <span class="text-sm font-semibold text-gray-700">Subject:</span>
+                                <span class="text-sm text-gray-900">${email.subject || 'No Subject'}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Tracked Links -->
+                        ${links.length > 0 ? `
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="text-sm font-semibold text-gray-900 mb-2">🔗 Tracked Links (${links.length})</h4>
+                                <div class="space-y-2">
+                                    ${links.map(link => `
+                                        <div class="bg-white p-2 rounded text-xs">
+                                            <div class="font-mono text-blue-600 truncate" title="${link.original_url}">
+                                                ${link.original_url}
+                                            </div>
+                                            <div class="text-gray-500 mt-1">
+                                                Short URL: <a href="${link.yourls_short_url}" target="_blank" class="text-blue-600 hover:underline">${link.yourls_short_url}</a>
+                                                · Clicks: <span class="font-semibold ${link.clicks > 0 ? 'text-green-600' : 'text-gray-400'}">${link.clicks}</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Email Body -->
+                        <div class="border-t pt-4">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-2">Email Content:</h4>
+                            <div class="bg-white border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+                                <div class="whitespace-pre-wrap text-sm text-gray-800">${email.body_text || 'No body content available'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading email:', error);
+                content.innerHTML = `
+                    <div class="text-center text-red-500">
+                        <p>Failed to load email</p>
+                        <p class="text-sm mt-2">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function closeEmailModal() {
+            document.getElementById('email-modal').classList.add('hidden');
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('email-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEmailModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeEmailModal();
+            }
+        });
         
         // Load dashboard on page load
         loadDashboard();

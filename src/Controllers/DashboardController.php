@@ -116,4 +116,29 @@ class DashboardController
             // Don't break dashboard if YOURLS sync fails
         }
     }
+    
+    /**
+     * Get full email details by ID
+     * GET /api/emails/{id}
+     */
+    public function getEmail(int $emailId): void
+    {
+        $email = $this->emailRepo->findById($emailId);
+        
+        if (!$email) {
+            JsonResponse::error('Email not found', 404)->send();
+            return;
+        }
+        
+        // Get link tracking data for this email
+        $links = [];
+        if ($this->linkTrackingRepo !== null) {
+            $links = $this->linkTrackingRepo->getByEmailId($emailId);
+        }
+        
+        JsonResponse::success([
+            'email' => $email,
+            'links' => $links
+        ])->send();
+    }
 }

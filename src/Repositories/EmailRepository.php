@@ -33,6 +33,24 @@ class EmailRepository implements EmailRepositoryInterface
     }
     
     /**
+     * Find email by ID
+     * 
+     * @param int $id
+     * @return array|null
+     */
+    public function findById(int $id): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT * FROM emails 
+            WHERE id = ? 
+            LIMIT 1
+        ");
+        $stmt->execute([$id]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+    
+    /**
      * Find email by internet message ID (secondary deduplication key)
      * 
      * @param string $internetMessageId
