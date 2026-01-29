@@ -159,12 +159,12 @@ class ThreadRepository implements ThreadRepositoryInterface
                 t.external_email as email,
                 COUNT(DISTINCT t.id) as thread_count,
                 MAX(t.updated_at) as last_contact,
-                ce.first_name,
-                ce.last_name,
-                ce.full_name,
-                ce.company_name,
-                ce.job_title,
-                ce.enrichment_status
+                MAX(ce.first_name) as first_name,
+                MAX(ce.last_name) as last_name,
+                MAX(ce.full_name) as full_name,
+                MAX(ce.company_name) as company_name,
+                MAX(ce.job_title) as job_title,
+                MAX(ce.enrichment_status) as enrichment_status
             FROM threads t
             LEFT JOIN contact_enrichment ce ON t.id = ce.thread_id
             GROUP BY t.external_email
