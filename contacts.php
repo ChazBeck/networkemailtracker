@@ -354,9 +354,6 @@ render_sso_header();
         
         // Load contacts on page load
         loadContacts();
-        
-        // Refresh every 30 seconds to catch new enrichments
-        setInterval(loadContacts, 30000);
     </script>
 </body>
 </html>
