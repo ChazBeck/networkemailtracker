@@ -148,11 +148,19 @@ class DashboardController
      */
     public function getContacts(): void
     {
-        $contacts = $this->threadRepo->getContactsGroupedByEmail();
-        
-        JsonResponse::success([
-            'contacts' => $contacts,
-            'total' => count($contacts)
-        ])->send();
+        try {
+            $contacts = $this->threadRepo->getContactsGroupedByEmail();
+            
+            JsonResponse::success([
+                'contacts' => $contacts,
+                'total' => count($contacts)
+            ])->send();
+        } catch (\PDOException $e) {
+            error_log("Database error in getContacts: " . $e->getMessage());
+            JsonResponse::error('Database error: ' . $e->getMessage(), 500)->send();
+        } catch (\Exception $e) {
+            error_log("Error in getContacts: " . $e->getMessage());
+            JsonResponse::error('Server error: ' . $e->getMessage(), 500)->send();
+        }
     }
 }
