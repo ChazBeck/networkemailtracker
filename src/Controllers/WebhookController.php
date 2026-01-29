@@ -79,6 +79,24 @@ class WebhookController
                                     'thread_id' => $result['thread_id'],
                                     'email' => $thread['external_email']
                                 ]);
+                                
+                                // Auto-sync to Networking Contacts board after enrichment completes
+                                if ($this->mondayService) {
+                                    try {
+                                        $contactSyncResult = $this->mondayService->syncContactByEmail($thread['external_email']);
+                                        if ($contactSyncResult['success'] ?? false) {
+                                            $this->logger->info('Auto-synced contact to Monday Networking Contacts board', [
+                                                'email' => $thread['external_email'],
+                                                'monday_item_id' => $contactSyncResult['monday_item_id'] ?? null
+                                            ]);
+                                        }
+                                    } catch (\Exception $e) {
+                                        $this->logger->error('Contact sync to Monday failed', [
+                                            'email' => $thread['external_email'],
+                                            'error' => $e->getMessage()
+                                        ]);
+                                    }
+                                }
                             } else {
                                 $this->logger->debug('Enrichment skipped or failed', [
                                     'thread_id' => $result['thread_id'],

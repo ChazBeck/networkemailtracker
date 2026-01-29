@@ -7,6 +7,7 @@ use App\Repositories\MondaySyncRepository;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EnrichmentRepository;
 use App\Repositories\EmailRepository;
+use App\Repositories\ContactSyncRepository;
 use Psr\Log\LoggerInterface;
 
 class MondayService
@@ -15,11 +16,14 @@ class MondayService
     private ThreadRepository $threadRepo;
     private EnrichmentRepository $enrichmentRepo;
     private EmailRepository $emailRepo;
+    private ?ContactSyncRepository $contactSyncRepo;
     private HttpClient $httpClient;
     private LoggerInterface $logger;
     private string $apiKey;
     private string $boardId;
     private array $columnIds;
+    private string $contactsBoardId;
+    private array $contactsColumnIds;
     
     public function __construct(
         MondaySyncRepository $syncRepo,
@@ -27,12 +31,14 @@ class MondayService
         EnrichmentRepository $enrichmentRepo,
         EmailRepository $emailRepo,
         LoggerInterface $logger,
-        ?HttpClient $httpClient = null
+        ?HttpClient $httpClient = null,
+        ?ContactSyncRepository $contactSyncRepo = null
     ) {
         $this->syncRepo = $syncRepo;
         $this->threadRepo = $threadRepo;
         $this->enrichmentRepo = $enrichmentRepo;
         $this->emailRepo = $emailRepo;
+        $this->contactSyncRepo = $contactSyncRepo;
         $this->logger = $logger;
         $this->httpClient = $httpClient ?? new HttpClient();
         
@@ -52,6 +58,20 @@ class MondayService
             'job_title' => $_ENV['MONDAY_COLUMN_JOB_TITLE'] ?? '',
             'message_id' => $_ENV['MONDAY_COLUMN_MESSAGE_ID'] ?? '',
             'conversation_id' => $_ENV['MONDAY_COLUMN_CONVERSATION_ID'] ?? '',
+        ];
+        
+        // Load Networking Contacts Board configuration
+        $this->contactsBoardId = $_ENV['MONDAY_CONTACTS_BOARD_ID'] ?? '';
+        $this->contactsColumnIds = [
+            'name' => $_ENV['MONDAY_CONTACTS_COLUMN_NAME'] ?? '',
+            'status' => $_ENV['MONDAY_CONTACTS_COLUMN_STATUS'] ?? '',
+            'date' => $_ENV['MONDAY_CONTACTS_COLUMN_DATE'] ?? '',
+            'full_name' => $_ENV['MONDAY_CONTACTS_COLUMN_FULL_NAME'] ?? '',
+            'first_name' => $_ENV['MONDAY_CONTACTS_COLUMN_FIRST_NAME'] ?? '',
+            'last_name' => $_ENV['MONDAY_CONTACTS_COLUMN_LAST_NAME'] ?? '',
+            'job_title' => $_ENV['MONDAY_CONTACTS_COLUMN_JOB_TITLE'] ?? '',
+            'email' => $_ENV['MONDAY_CONTACTS_COLUMN_EMAIL'] ?? '',
+            'linkedin' => $_ENV['MONDAY_CONTACTS_COLUMN_LINKEDIN'] ?? '',
         ];
     }
     
@@ -394,5 +414,268 @@ class MondayService
             ]);
             return null;
         }
+    }
+    
+    /**
+     * Sync a contact to Monday.com Networking Contacts board
+     * 
+     * @param array $contact Contact data from getContactsGroupedByEmail()
+     * @return array Result with success status and monday_item_id
+     */
+    public function syncContact(array $contact): array
+    {
+        if (!$this->contactSyncRepo) {
+            return [
+                'success' => false,
+                'error' => 'ContactSyncRepository not configured'
+            ];
+        }
+        
+        if (empty($this->contactsBoardId)) {
+            return [
+                'success' => false,
+                'error' => 'Contacts board not configured'
+            ];
+        }
+        
+        try {
+            // Check if already synced
+            $existingSync = $this->contactSyncRepo->findByEmail($contact['email']);
+            
+            if ($existingSync && $existingSync['monday_item_id']) {
+                // Update existing item
+                return $this->updateContactItem($existingSync['monday_item_id'], $contact);
+            } else {
+                // Create new item
+                return $this->createContactItem($contact);
+            }
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to sync contact to Monday', [
+                'email' => $contact['email'],
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * Sync a contact by email address (fetches contact data first)
+     * 
+     * @param string $email
+     * @return array Result with success status and monday_item_id
+     */
+    public function syncContactByEmail(string $email): array
+    {
+        // Get all contacts and find the one with matching email
+        $contacts = $this->threadRepo->getContactsGroupedByEmail();
+        $contact = array_filter($contacts, fn($c) => $c['email'] === $email);
+        $contact = reset($contact);
+        
+        if (!$contact) {
+            return [
+                'success' => false,
+                'error' => 'Contact not found'
+            ];
+        }
+        
+        return $this->syncContact($contact);
+    }
+    
+    /**
+     * Create new Monday.com contact item
+     * 
+     * @param array $contact
+     * @return array
+     */
+    private function createContactItem(array $contact): array
+    {
+        // Determine item name: Company - Full Name, or just Full Name/Email
+        $itemName = $contact['company_name'] 
+            ? "{$contact['company_name']} - " . ($contact['full_name'] ?: $contact['email'])
+            : ($contact['full_name'] ?: $contact['email']);
+        
+        // Build column values
+        $columnValues = [];
+        
+        // Status
+        if ($this->contactsColumnIds['status']) {
+            $status = match($contact['enrichment_status'] ?? null) {
+                'complete' => 'Enriched',
+                'pending' => 'Processing',
+                'failed' => 'Failed',
+                default => 'New'
+            };
+            $columnValues[$this->contactsColumnIds['status']] = ['label' => $status];
+        }
+        
+        // Date (last contact)
+        if ($this->contactsColumnIds['date'] && $contact['last_contact']) {
+            $columnValues[$this->contactsColumnIds['date']] = [
+                'date' => date('Y-m-d', strtotime($contact['last_contact']))
+            ];
+        }
+        
+        // Text fields
+        if ($this->contactsColumnIds['full_name'] && $contact['full_name']) {
+            $columnValues[$this->contactsColumnIds['full_name']] = $contact['full_name'];
+        }
+        if ($this->contactsColumnIds['first_name'] && $contact['first_name']) {
+            $columnValues[$this->contactsColumnIds['first_name']] = $contact['first_name'];
+        }
+        if ($this->contactsColumnIds['last_name'] && $contact['last_name']) {
+            $columnValues[$this->contactsColumnIds['last_name']] = $contact['last_name'];
+        }
+        if ($this->contactsColumnIds['job_title'] && $contact['job_title']) {
+            $columnValues[$this->contactsColumnIds['job_title']] = $contact['job_title'];
+        }
+        
+        // Email
+        if ($this->contactsColumnIds['email'] && $contact['email']) {
+            $columnValues[$this->contactsColumnIds['email']] = [
+                'email' => $contact['email'],
+                'text' => $contact['email']
+            ];
+        }
+        
+        // LinkedIn URL
+        if ($this->contactsColumnIds['linkedin'] && !empty($contact['linkedin_url'])) {
+            $columnValues[$this->contactsColumnIds['linkedin']] = [
+                'url' => $contact['linkedin_url'],
+                'text' => 'LinkedIn Profile'
+            ];
+        }
+        
+        $mutation = 'mutation {
+          create_item (
+            board_id: ' . $this->contactsBoardId . ',
+            item_name: "' . $this->escapeGraphQL($itemName) . '",
+            column_values: "' . $this->escapeGraphQL(json_encode($columnValues)) . '"
+          ) {
+            id
+          }
+        }';
+        
+        $this->logger->debug('Creating Monday contact item', [
+            'mutation' => $mutation,
+            'column_values' => $columnValues
+        ]);
+        
+        $response = $this->callMondayAPI($mutation);
+        
+        if (isset($response['data']['create_item']['id'])) {
+            $mondayItemId = $response['data']['create_item']['id'];
+            
+            // Save sync record
+            $this->contactSyncRepo->create([
+                'email' => $contact['email'],
+                'monday_item_id' => $mondayItemId,
+                'last_synced_at' => date('Y-m-d H:i:s'),
+                'last_sync_status' => 'ok'
+            ]);
+            
+            $this->logger->info('Created Monday contact item', [
+                'email' => $contact['email'],
+                'monday_item_id' => $mondayItemId
+            ]);
+            
+            return [
+                'success' => true,
+                'monday_item_id' => $mondayItemId,
+                'action' => 'created'
+            ];
+        }
+        
+        throw new \Exception('Monday API did not return item ID: ' . json_encode($response));
+    }
+    
+    /**
+     * Update existing Monday.com contact item
+     * 
+     * @param string $mondayItemId
+     * @param array $contact
+     * @return array
+     */
+    private function updateContactItem(string $mondayItemId, array $contact): array
+    {
+        // Build column values for update
+        $columnValues = [];
+        
+        // Status
+        if ($this->contactsColumnIds['status']) {
+            $status = match($contact['enrichment_status'] ?? null) {
+                'complete' => 'Enriched',
+                'pending' => 'Processing',
+                'failed' => 'Failed',
+                default => 'New'
+            };
+            $columnValues[$this->contactsColumnIds['status']] = ['label' => $status];
+        }
+        
+        // Date (last contact)
+        if ($this->contactsColumnIds['date'] && $contact['last_contact']) {
+            $columnValues[$this->contactsColumnIds['date']] = [
+                'date' => date('Y-m-d', strtotime($contact['last_contact']))
+            ];
+        }
+        
+        // Update text fields only if they have values
+        if ($this->contactsColumnIds['full_name'] && $contact['full_name']) {
+            $columnValues[$this->contactsColumnIds['full_name']] = $contact['full_name'];
+        }
+        if ($this->contactsColumnIds['first_name'] && $contact['first_name']) {
+            $columnValues[$this->contactsColumnIds['first_name']] = $contact['first_name'];
+        }
+        if ($this->contactsColumnIds['last_name'] && $contact['last_name']) {
+            $columnValues[$this->contactsColumnIds['last_name']] = $contact['last_name'];
+        }
+        if ($this->contactsColumnIds['job_title'] && $contact['job_title']) {
+            $columnValues[$this->contactsColumnIds['job_title']] = $contact['job_title'];
+        }
+        
+        // LinkedIn URL
+        if ($this->contactsColumnIds['linkedin'] && !empty($contact['linkedin_url'])) {
+            $columnValues[$this->contactsColumnIds['linkedin']] = [
+                'url' => $contact['linkedin_url'],
+                'text' => 'LinkedIn Profile'
+            ];
+        }
+        
+        $mutation = 'mutation {
+          change_multiple_column_values (
+            item_id: ' . $mondayItemId . ',
+            board_id: ' . $this->contactsBoardId . ',
+            column_values: "' . $this->escapeGraphQL(json_encode($columnValues)) . '"
+          ) {
+            id
+          }
+        }';
+        
+        $response = $this->callMondayAPI($mutation);
+        
+        if (isset($response['data']['change_multiple_column_values']['id'])) {
+            $this->contactSyncRepo->update($contact['email'], [
+                'last_synced_at' => date('Y-m-d H:i:s'),
+                'last_sync_status' => 'ok',
+                'last_error' => null
+            ]);
+            
+            $this->logger->info('Updated Monday contact item', [
+                'email' => $contact['email'],
+                'monday_item_id' => $mondayItemId
+            ]);
+            
+            return [
+                'success' => true,
+                'monday_item_id' => $mondayItemId,
+                'action' => 'updated'
+            ];
+        }
+        
+        throw new \Exception('Failed to update Monday contact item');
     }
 }

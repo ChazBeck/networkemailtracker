@@ -204,8 +204,13 @@ render_sso_header();
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             <button onclick="event.stopPropagation(); openEditModal(${index})" 
-                                                class="text-blue-600 hover:text-blue-900 font-medium">
+                                                class="text-blue-600 hover:text-blue-900 font-medium mr-3">
                                                 Edit
+                                            </button>
+                                            <button onclick="event.stopPropagation(); syncToMonday('${contact.email}', ${index})" 
+                                                class="text-green-600 hover:text-green-900 font-medium"
+                                                id="sync-btn-${index}">
+                                                Sync
                                             </button>
                                         </td>
                                     </tr>
@@ -351,6 +356,57 @@ render_sso_header();
                 closeEditModal();
             }
         });
+        
+        async function syncToMonday(email, index) {
+            const btn = document.getElementById(`sync-btn-${index}`);
+            const originalText = btn.textContent;
+            btn.textContent = 'Syncing...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('api/monday/sync-contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${text}`);
+                }
+                
+                const result = await response.json();
+                console.log('Sync result:', result);
+                
+                // Show success feedback
+                btn.textContent = '✓ Synced';
+                btn.classList.remove('text-green-600', 'hover:text-green-900');
+                btn.classList.add('text-gray-400');
+                
+                // Reset after 3 seconds
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('text-gray-400');
+                    btn.classList.add('text-green-600', 'hover:text-green-900');
+                    btn.disabled = false;
+                }, 3000);
+            } catch (error) {
+                console.error('Error syncing to Monday:', error);
+                btn.textContent = '✗ Error';
+                btn.classList.remove('text-green-600');
+                btn.classList.add('text-red-600');
+                
+                // Reset after 3 seconds
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('text-red-600');
+                    btn.classList.add('text-green-600', 'hover:text-green-900');
+                    btn.disabled = false;
+                }, 3000);
+            }
+        }
         
         // Load contacts on page load
         loadContacts();

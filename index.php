@@ -46,6 +46,7 @@ use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\EnrichmentRepository;
 use App\Repositories\MondaySyncRepository;
+use App\Repositories\ContactSyncRepository;
 use App\Repositories\LinkTrackingRepository;
 use App\Services\WebhookService;
 use App\Services\EnrichmentService;
@@ -57,6 +58,7 @@ use App\Services\LinkTrackingService;
 use App\Controllers\WebhookController;
 use App\Controllers\DashboardController;
 use App\Controllers\DraftController;
+use App\Controllers\MondayController;
 
 // Load environment variables
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
@@ -107,6 +109,7 @@ $container->singleton('threadRepo', fn($c) => new ThreadRepository($c->get('db')
 $container->singleton('emailRepo', fn($c) => new EmailRepository($c->get('db')));
 $container->singleton('enrichmentRepo', fn($c) => new EnrichmentRepository($c->get('db')));
 $container->singleton('syncRepo', fn($c) => new MondaySyncRepository($c->get('db')));
+$container->singleton('contactSyncRepo', fn($c) => new ContactSyncRepository($c->get('db')));
 $container->singleton('linkTrackingRepo', fn($c) => new LinkTrackingRepository($c->get('db'), $c->get('logger')));
 
 // Register services
@@ -131,7 +134,9 @@ $container->singleton('mondayService', fn($c) => new MondayService(
     $c->get('threadRepo'),
     $c->get('enrichmentRepo'),
     $c->get('emailRepo'),
-    $c->get('logger')
+    $c->get('logger'),
+    null, // HttpClient
+    $c->get('contactSyncRepo')
 ));
 
 // Register YOURLS services (optional)
@@ -176,10 +181,17 @@ $container->register('draftController', fn($c) => new DraftController(
     $c->get('logger')
 ));
 
+$container->register('mondayController', fn($c) => new MondayController(
+    $c->get('mondayService'),
+    $c->get('threadRepo'),
+    $c->get('logger')
+));
+
 // Get controllers from container
 $webhookController = $container->get('webhookController');
 $dashboardController = $container->get('dashboardController');
 $draftController = $container->get('draftController');
+$mondayController = $container->get('mondayController');
 
 // Get request details
 $method = $_SERVER['REQUEST_METHOD'];
@@ -248,6 +260,15 @@ $router->get('/api/contacts', function($params) use ($dashboardController) {
 // Update enrichment
 $router->put('/api/enrichment/{id}', function($params) use ($dashboardController) {
     $dashboardController->updateEnrichment((int)$params['id']);
+});
+
+// Monday.com sync endpoints
+$router->post('/api/monday/sync-contact', function($params) use ($mondayController) {
+    $mondayController->syncContact();
+});
+
+$router->post('/api/monday/sync-all-contacts', function($params) use ($mondayController) {
+    $mondayController->syncAllContacts();
 });
 
 // Webhook endpoints
