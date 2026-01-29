@@ -68,8 +68,22 @@ class Router
                 // Extract named parameters
                 $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
                 
-                // Call handler
-                call_user_func($route['handler'], $params);
+                // Call handler with error handling
+                try {
+                    call_user_func($route['handler'], $params);
+                } catch (\Throwable $e) {
+                    // Catch ALL errors including fatal errors
+                    error_log("Router error: " . $e->getMessage());
+                    error_log("Stack trace: " . $e->getTraceAsString());
+                    http_response_code(500);
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => false,
+                        'error' => 'Server error: ' . $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine()
+                    ]);
+                }
                 return;
             }
         }

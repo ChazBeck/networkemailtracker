@@ -4,6 +4,36 @@
  * Front Controller - Main entry point for all HTTP requests
  */
 
+// Global error handler - convert all errors to exceptions
+set_error_handler(function($severity, $message, $file, $line) {
+    throw new \ErrorException($message, 0, $severity, $file, $line);
+});
+
+// Global exception handler - return JSON for API routes
+set_exception_handler(function($e) {
+    error_log("Uncaught exception: " . $e->getMessage());
+    error_log("File: " . $e->getFile() . " Line: " . $e->getLine());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    
+    // Return JSON error for API routes
+    if (strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'error' => 'Fatal error: ' . $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
+        exit;
+    }
+    
+    // For non-API routes, show error page
+    http_response_code(500);
+    echo "<h1>500 Internal Server Error</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
+    exit;
+});
+
 require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Core\Router;
