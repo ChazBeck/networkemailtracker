@@ -197,4 +197,54 @@ class EnrichmentRepository implements EnrichmentRepositoryInterface
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    /**
+     * Update enrichment record by ID
+     * 
+     * @param int $id Enrichment ID
+     * @param array $data
+     * @return bool
+     */
+    public function updateById(int $id, array $data): bool
+    {
+        $fields = [];
+        $params = [];
+        
+        $allowedFields = [
+            'first_name', 'last_name', 'full_name', 'company_name', 
+            'company_url', 'linkedin_url', 'job_title'
+        ];
+        
+        foreach ($allowedFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $fields[] = "$field = ?";
+                $params[] = $data[$field];
+            }
+        }
+        
+        if (empty($fields)) {
+            return false;
+        }
+        
+        $params[] = $id;
+        $sql = "UPDATE contact_enrichment SET " . implode(', ', $fields) . " WHERE id = ?";
+        
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
+    }
+    
+    /**
+     * Find enrichment by ID
+     * 
+     * @param int $id
+     * @return array|null
+     */
+    public function findById(int $id): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM contact_enrichment WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ?: null;
+    }
 }

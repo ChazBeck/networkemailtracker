@@ -245,6 +245,11 @@ $router->get('/api/contacts', function($params) use ($dashboardController) {
     $dashboardController->getContacts();
 });
 
+// Update enrichment
+$router->put('/api/enrichment/{id}', function($params) use ($dashboardController) {
+    $dashboardController->updateEnrichment((int)$params['id']);
+});
+
 // Webhook endpoints
 // Primary email webhook (Microsoft 365 via Power Automate)
 $router->post('/api/webhook/email', function($params) use ($webhookController) {

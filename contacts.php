@@ -48,7 +48,90 @@ render_sso_header();
         </div>
     </div>
 
+    <!-- Edit Contact Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Edit Contact Information</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="editForm" onsubmit="saveContact(event)">
+                <input type="hidden" id="edit-enrichment-id">
+                <input type="hidden" id="edit-email">
+                
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <input type="text" id="edit-first-name" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <input type="text" id="edit-last-name" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="edit-full-name" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                        <input type="text" id="edit-company-name" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                        <input type="text" id="edit-job-title" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company URL</label>
+                        <input type="url" id="edit-company-url" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
+                        <input type="url" id="edit-linkedin-url" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://linkedin.com/in/">
+                    </div>
+                    
+                    <div class="text-sm text-gray-500 bg-gray-50 p-3 rounded">
+                        <strong>Email:</strong> <span id="edit-email-display"></span>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeEditModal()" 
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        let currentContacts = []; // Store contacts for editing
+        
         async function loadContacts() {
             try {
                 const response = await fetch('api/contacts');
@@ -61,6 +144,9 @@ render_sso_header();
                 
                 const data = await response.json();
                 console.log('Contacts Data:', data);
+                
+                // Store contacts for editing
+                currentContacts = data.contacts;
                 
                 const container = document.getElementById('contacts-container');
                 
@@ -82,12 +168,13 @@ render_sso_header();
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Threads</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Contact</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                ${data.contacts.map(contact => `
-                                    <tr class="hover:bg-gray-50 cursor-pointer" onclick="viewContactThreads('${contact.email}')">
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                ${data.contacts.map((contact, index) => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
                                             <div class="text-sm font-medium text-gray-900">
                                                 ${contact.full_name || contact.email}
                                             </div>
@@ -95,25 +182,31 @@ render_sso_header();
                                                 `<div class="text-xs text-gray-500">${contact.first_name} ${contact.last_name}</div>` : 
                                                 ''}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
                                             <div class="text-sm text-gray-900">${contact.company_name || '-'}</div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
                                             <div class="text-sm text-gray-900">${contact.job_title || '-'}</div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
                                             <div class="text-sm text-gray-600">${contact.email}</div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
                                             <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
                                                 ${contact.thread_count} thread${contact.thread_count !== 1 ? 's' : ''}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer" onclick="viewContactThreads('${contact.email}')">
                                             ${formatDate(contact.last_contact)}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
                                             ${getEnrichmentBadge(contact.enrichment_status)}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button onclick="event.stopPropagation(); openEditModal(${index})" 
+                                                class="text-blue-600 hover:text-blue-900 font-medium">
+                                                Edit
+                                            </button>
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -165,6 +258,99 @@ render_sso_header();
             // Navigate to dashboard with filter for this contact's email
             window.location.href = `dashboard.php?contact=${encodeURIComponent(email)}`;
         }
+        
+        function openEditModal(contactIndex) {
+            const contact = currentContacts[contactIndex];
+            
+            // We need to get the enrichment ID - fetch it from the contact's thread
+            // For now, we'll need to add enrichment_id to the contact query response
+            // Let's populate the form with contact data
+            document.getElementById('edit-email').value = contact.email;
+            document.getElementById('edit-email-display').textContent = contact.email;
+            document.getElementById('edit-first-name').value = contact.first_name || '';
+            document.getElementById('edit-last-name').value = contact.last_name || '';
+            document.getElementById('edit-full-name').value = contact.full_name || '';
+            document.getElementById('edit-company-name').value = contact.company_name || '';
+            document.getElementById('edit-job-title').value = contact.job_title || '';
+            document.getElementById('edit-company-url').value = contact.company_url || '';
+            document.getElementById('edit-linkedin-url').value = contact.linkedin_url || '';
+            
+            // Store the enrichment ID if available
+            if (contact.enrichment_id) {
+                document.getElementById('edit-enrichment-id').value = contact.enrichment_id;
+            }
+            
+            // Show modal
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+        
+        async function saveContact(event) {
+            event.preventDefault();
+            
+            const enrichmentId = document.getElementById('edit-enrichment-id').value;
+            const email = document.getElementById('edit-email').value;
+            
+            // If no enrichment ID, we need to create one first
+            if (!enrichmentId) {
+                alert('Cannot edit contact without enrichment data. Please wait for enrichment to complete.');
+                return;
+            }
+            
+            const data = {
+                first_name: document.getElementById('edit-first-name').value || null,
+                last_name: document.getElementById('edit-last-name').value || null,
+                full_name: document.getElementById('edit-full-name').value || null,
+                company_name: document.getElementById('edit-company-name').value || null,
+                job_title: document.getElementById('edit-job-title').value || null,
+                company_url: document.getElementById('edit-company-url').value || null,
+                linkedin_url: document.getElementById('edit-linkedin-url').value || null
+            };
+            
+            try {
+                const response = await fetch(`api/enrichment/${enrichmentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${text}`);
+                }
+                
+                const result = await response.json();
+                console.log('Update result:', result);
+                
+                // Close modal and reload contacts
+                closeEditModal();
+                await loadContacts();
+                
+                alert('Contact updated successfully!');
+            } catch (error) {
+                console.error('Error saving contact:', error);
+                alert('Failed to save contact: ' + error.message);
+            }
+        }
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeEditModal();
+            }
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('editModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeEditModal();
+            }
+        });
         
         // Load contacts on page load
         loadContacts();

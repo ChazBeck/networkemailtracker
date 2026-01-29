@@ -171,4 +171,47 @@ class DashboardController
             JsonResponse::error('Server error: ' . $e->getMessage(), 500)->send();
         }
     }
+    
+    /**
+     * Update enrichment data
+     * PUT /api/enrichment/{id}
+     */
+    public function updateEnrichment(int $enrichmentId): void
+    {
+        try {
+            // Get JSON body
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
+            
+            if (!$data) {
+                JsonResponse::error('Invalid JSON data', 400)->send();
+                return;
+            }
+            
+            // Validate enrichment exists
+            $enrichment = $this->enrichmentRepo->findById($enrichmentId);
+            if (!$enrichment) {
+                JsonResponse::error('Enrichment not found', 404)->send();
+                return;
+            }
+            
+            // Update enrichment
+            $success = $this->enrichmentRepo->updateById($enrichmentId, $data);
+            
+            if ($success) {
+                JsonResponse::success([
+                    'message' => 'Enrichment updated successfully',
+                    'enrichment_id' => $enrichmentId
+                ])->send();
+            } else {
+                JsonResponse::error('Failed to update enrichment', 500)->send();
+            }
+        } catch (\PDOException $e) {
+            error_log("Database error in updateEnrichment: " . $e->getMessage());
+            JsonResponse::error('Database error: ' . $e->getMessage(), 500)->send();
+        } catch (\Exception $e) {
+            error_log("Error in updateEnrichment: " . $e->getMessage());
+            JsonResponse::error('Server error: ' . $e->getMessage(), 500)->send();
+        }
+    }
 }
