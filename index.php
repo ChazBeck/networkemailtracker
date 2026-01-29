@@ -205,6 +205,16 @@ $router->get('/api/emails/{id}', function($params) use ($dashboardController) {
     $dashboardController->getEmail((int)$params['id']);
 });
 
+// Contacts page
+$router->get('/contacts', function($params) {
+    require __DIR__ . '/contacts.php';
+});
+
+// Contacts API
+$router->get('/api/contacts', function($params) use ($dashboardController) {
+    $dashboardController->getContacts();
+});
+
 // Webhook endpoints
 // Primary email webhook (Microsoft 365 via Power Automate)
 $router->post('/api/webhook/email', function($params) use ($webhookController) {

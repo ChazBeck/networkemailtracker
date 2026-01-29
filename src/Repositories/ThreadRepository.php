@@ -146,4 +146,30 @@ class ThreadRepository implements ThreadRepositoryInterface
         $stmt->execute([$limit]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-}
+    
+    /**
+     * Get all contacts grouped by email address with enrichment data
+     * 
+     * @return array
+     */
+    public function getContactsGroupedByEmail(): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT 
+                t.external_email as email,
+                COUNT(DISTINCT t.id) as thread_count,
+                MAX(t.updated_at) as last_contact,
+                ce.first_name,
+                ce.last_name,
+                ce.full_name,
+                ce.company_name,
+                ce.job_title,
+                ce.enrichment_status
+            FROM threads t
+            LEFT JOIN contact_enrichment ce ON t.id = ce.thread_id
+            GROUP BY t.external_email
+            ORDER BY MAX(t.updated_at) DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }

@@ -80,6 +80,7 @@ if (file_exists($headerPath)) {
         <div class="nav-container">
             <div class="nav-links">
                 <a href="dashboard.php" class="nav-link">Email Log</a>
+                <a href="contacts.php" class="nav-link">Contacts</a>
                 <a href="email-drafter.php" class="nav-link active">Email Drafter</a>
             </div>
         </div>

@@ -141,4 +141,18 @@ class DashboardController
             'links' => $links
         ])->send();
     }
+    
+    /**
+     * Get all contacts grouped by email address
+     * GET /api/contacts
+     */
+    public function getContacts(): void
+    {
+        $contacts = $this->threadRepo->getContactsGroupedByEmail();
+        
+        JsonResponse::success([
+            'contacts' => $contacts,
+            'total' => count($contacts)
+        ])->send();
+    }
 }

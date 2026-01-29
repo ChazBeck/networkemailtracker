@@ -28,6 +28,7 @@ render_sso_header();
         <div class="nav-container">
             <div class="nav-links">
                 <a href="dashboard.php" class="nav-link active">Email Log</a>
+                <a href="contacts.php" class="nav-link">Contacts</a>
                 <a href="email-drafter.php" class="nav-link">Email Drafter</a>
             </div>
         </div>
