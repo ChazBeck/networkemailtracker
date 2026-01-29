@@ -502,13 +502,13 @@ class MondayService
         // Build column values
         $columnValues = [];
         
-        // Status
+        // Status - map to Monday board's actual status labels
         if ($this->contactsColumnIds['status']) {
             $status = match($contact['enrichment_status'] ?? null) {
-                'complete' => 'Enriched',
-                'pending' => 'Processing',
-                'failed' => 'Failed',
-                default => 'New'
+                'complete' => 'Done',
+                'pending' => 'Working on it',
+                'failed' => 'Stuck',
+                default => 'Working on it'
             };
             $columnValues[$this->contactsColumnIds['status']] = ['label' => $status];
         }
@@ -605,13 +605,13 @@ class MondayService
         // Build column values for update
         $columnValues = [];
         
-        // Status
+        // Status - map to Monday board's actual status labels
         if ($this->contactsColumnIds['status']) {
             $status = match($contact['enrichment_status'] ?? null) {
-                'complete' => 'Enriched',
-                'pending' => 'Processing',
-                'failed' => 'Failed',
-                default => 'New'
+                'complete' => 'Done',
+                'pending' => 'Working on it',
+                'failed' => 'Stuck',
+                default => 'Working on it'
             };
             $columnValues[$this->contactsColumnIds['status']] = ['label' => $status];
         }
