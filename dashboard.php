@@ -291,10 +291,17 @@ if (file_exists($headerPath)) {
             content.innerHTML = '<div class="text-center text-gray-500">Loading message...</div>';
             
             try {
+                // Check if linkedin_messages exists
+                if (!allThreadsData || !allThreadsData.linkedin_messages) {
+                    throw new Error('No LinkedIn message data available');
+                }
+                
                 // Find message in the cached data
-                const message = allThreadsData.linkedin_messages.find(m => m.id === messageId);
+                const message = allThreadsData.linkedin_messages.find(m => m.id == messageId);
                 
                 if (!message) {
+                    console.error('Message not found. Available messages:', allThreadsData.linkedin_messages);
+                    console.error('Looking for message ID:', messageId);
                     throw new Error('Message not found');
                 }
                 
