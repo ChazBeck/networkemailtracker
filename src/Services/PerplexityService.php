@@ -16,7 +16,7 @@ class PerplexityService
     public function __construct(LoggerInterface $logger, ?HttpClient $httpClient = null)
     {
         $this->apiKey = $_ENV['PERPLEXITY_API_KEY'] ?? '';
-        $this->model = $_ENV['PERPLEXITY_MODEL'] ?? 'sonar';
+        $this->model = $_ENV['PERPLEXITY_MODEL'] ?? 'sonar-pro';
         $this->logger = $logger;
         $this->httpClient = $httpClient ?? new HttpClient();
         $this->httpClient->setTimeout(5)->setConnectTimeout(2);
@@ -278,25 +278,27 @@ class PerplexityService
      */
     private function buildLinkedInEnrichmentPrompt(string $linkedInUrl, array $context): string
     {
-        $prompt = "Look up the LinkedIn profile at this URL: {$linkedInUrl}\n\n";
+        // Extract name from LinkedIn URL for better searching
+        // e.g., https://www.linkedin.com/in/grantcgibson/ -> Grant Gibson
+        $urlPath = parse_url($linkedInUrl, PHP_URL_PATH);
+        $username = trim(str_replace(['/in/', '/'], ' ', $urlPath));
         
-        $prompt .= "Extract the person's current professional information directly from their LinkedIn profile.\n";
-        $prompt .= "Focus on their CURRENT position (the most recent job listed on their profile).\n\n";
-        
-        $prompt .= "Return ONLY a JSON object with these exact fields:\n";
+        $prompt = "Research the professional named in this LinkedIn profile URL: {$linkedInUrl}\n\n";
+        $prompt .= "The LinkedIn username is: {$username}\n\n";
+        $prompt .= "Search for this person's current professional information online. ";
+        $prompt .= "Find their current employer, job title, and other details.\n\n";
+        $prompt .= "Return the information in this exact JSON format:\n";
         $prompt .= "{\n";
-        $prompt .= '  "first_name": "Their first name from the profile",'."\n";
-        $prompt .= '  "last_name": "Their last name from the profile",'."\n";
-        $prompt .= '  "full_name": "Their full name from the profile",'."\n";
-        $prompt .= '  "company_name": "The company where they CURRENTLY work (from their latest job position)",'."\n";
-        $prompt .= '  "company_url": "The website URL of their CURRENT employer company",'."\n";
+        $prompt .= '  "first_name": "Their first name",'."\n";
+        $prompt .= '  "last_name": "Their last name",'."\n";
+        $prompt .= '  "full_name": "Their full name",'."\n";
+        $prompt .= '  "company_name": "Their current company",'."\n";
+        $prompt .= '  "company_url": "Their current company website",'."\n";
         $prompt .= '  "linkedin_url": "' . $linkedInUrl . '",'."\n";
-        $prompt .= '  "job_title": "Their CURRENT job title (from their latest position)",'."\n";
+        $prompt .= '  "job_title": "Their current job title",'."\n";
         $prompt .= '  "confidence": 0.85'."\n";
         $prompt .= "}\n\n";
-        $prompt .= "IMPORTANT: Extract information from THIS person's LinkedIn profile, not about LinkedIn or other companies.\n";
-        $prompt .= "If you cannot find their current employer, set company_name and company_url to null.\n";
-        $prompt .= "Return ONLY the JSON object, no additional text or explanation.";
+        $prompt .= "Return ONLY the JSON object with the actual data you find. No additional text.";
         
         return $prompt;
     }
