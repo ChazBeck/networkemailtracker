@@ -100,12 +100,6 @@ if (file_exists($headerPath)) {
                             placeholder="https://www.linkedin.com/in/username"
                             required
                         >
-                        <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #6b7280;">
-                            Paste the full LinkedIn profile URL (e.g., https://www.linkedin.com/in/john-doe)
-                        </p>
-                        <div id="urlPreview" class="hidden" style="margin-top: 0.5rem; padding: 0.5rem; background: #eff6ff; border-radius: 0.25rem; font-size: 0.875rem; color: #1f2937;">
-                            <strong style="color: #2563eb;">Normalized URL:</strong> <span id="normalizedUrl"></span>
-                        </div>
                     </div>
 
                     <!-- Message -->
@@ -122,9 +116,6 @@ if (file_exists($headerPath)) {
                             placeholder="Paste your LinkedIn message here..."
                             required
                         ></textarea>
-                        <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #6b7280;">
-                            Copy and paste the message you sent or received on LinkedIn
-                        </p>
                     </div>
 
                     <!-- Direction -->
@@ -150,7 +141,7 @@ if (file_exists($headerPath)) {
                             type="submit" 
                             class="btn btn-primary"
                         >
-                            💾 Log Message
+                            Log Message
                         </button>
                     </div>
                 </form>
@@ -180,31 +171,6 @@ if (file_exists($headerPath)) {
                 activeUser = this.textContent.toLowerCase();
                 activeSenderEmail = this.dataset.email;
             });
-        });
-
-        // URL normalization preview
-        const linkedinUrlInput = document.getElementById('linkedinUrl');
-        const urlPreview = document.getElementById('urlPreview');
-        const normalizedUrlSpan = document.getElementById('normalizedUrl');
-
-        linkedinUrlInput.addEventListener('input', function() {
-            const url = this.value.trim();
-            if (url) {
-                // Simple client-side normalization preview
-                let normalized = url.toLowerCase();
-                normalized = normalized.replace(/^https?:\/\//i, 'https://');
-                normalized = normalized.replace(/linkedin\.com\/([^/]+)\/(.+?)(\?.*)?$/, 'linkedin.com/$1/$2');
-                normalized = normalized.replace(/\/+$/, '');
-                
-                if (!normalized.startsWith('https://')) {
-                    normalized = 'https://' + normalized;
-                }
-                
-                normalizedUrlSpan.textContent = normalized;
-                urlPreview.classList.remove('hidden');
-            } else {
-                urlPreview.classList.add('hidden');
-            }
         });
 
         // Form submission
@@ -290,7 +256,6 @@ if (file_exists($headerPath)) {
 
         function resetForm() {
             form.reset();
-            urlPreview.classList.add('hidden');
             alertBox.classList.add('hidden');
         }
     </script>
