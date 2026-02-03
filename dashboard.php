@@ -408,9 +408,10 @@ if (file_exists($headerPath)) {
                 const enrichmentKey = `${thread.channel}_${thread.id}`;
                 const enrichment = data.enrichments[enrichmentKey];
                 
-                // Build contact display
+                // Build contact display with proper fallbacks
                 const companyName = enrichment?.company_name || 'Unknown Company';
-                const contactName = enrichment?.full_name || thread.contact_identifier;
+                const contactName = enrichment?.full_name || thread.contact_identifier || 'Unknown Contact';
+                const ownerEmail = thread.owner || 'unknown';
                 const channelIcon = isLinkedIn ? '💼' : '📧';
                 const channelLabel = isLinkedIn ? 'LinkedIn' : 'Email';
                 
@@ -432,7 +433,7 @@ if (file_exists($headerPath)) {
                                         <span class="font-semibold">${contactName}</span>
                                     </div>
                                     <div class="text-xs text-gray-500 mt-1">
-                                        Owner: ${thread.owner} · ${thread.email_count} message${thread.email_count !== 1 ? 's' : ''}
+                                        Owner: ${ownerEmail} · ${thread.email_count} message${thread.email_count !== 1 ? 's' : ''}
                                     </div>
                                 </div>
                                 <div class="text-right ml-4">
