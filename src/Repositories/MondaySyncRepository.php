@@ -18,9 +18,10 @@ class MondaySyncRepository implements MondaySyncRepositoryInterface
      * Find sync record by thread ID
      * 
      * @param int $threadId
+     * @param string $threadType 'email' or 'linkedin' - optional for backward compatibility
      * @return array|null
      */
-    public function findByThreadId(int $threadId): ?array
+    public function findByThreadId(int $threadId, string $threadType = 'email'): ?array
     {
         $stmt = $this->db->prepare('
             SELECT * FROM monday_sync 

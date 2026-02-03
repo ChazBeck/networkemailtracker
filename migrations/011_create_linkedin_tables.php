@@ -37,9 +37,21 @@ return [
             INDEX idx_sender (sender_email),
             INDEX idx_sent_at (sent_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        
+        CREATE TABLE IF NOT EXISTS monday_sync_linkedin (
+            thread_id INT UNSIGNED PRIMARY KEY,
+            board_id VARCHAR(64) NULL,
+            item_id VARCHAR(64) NULL,
+            last_pushed_at DATETIME NULL,
+            last_push_status ENUM('ok','error') NULL,
+            last_error TEXT NULL,
+            CONSTRAINT fk_monday_linkedin_thread FOREIGN KEY (thread_id) 
+                REFERENCES linkedin_threads(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ",
     
     'down' => "
+        DROP TABLE IF EXISTS monday_sync_linkedin;
         DROP TABLE IF EXISTS linkedin_messages;
         DROP TABLE IF EXISTS linkedin_threads;
     "
