@@ -379,7 +379,7 @@ if (file_exists($headerPath)) {
             submitBtn.textContent = '⏳ Logging...';
 
             try {
-                const response = await fetch('/networkemailtracking/api/linkedin/submit', {
+                const response = await fetch('api/linkedin/submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

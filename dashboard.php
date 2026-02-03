@@ -109,7 +109,7 @@ if (file_exists($headerPath)) {
         async function loadDashboard() {
             try {
                 // Use relative path for API call
-                const response = await fetch('/networkemailtracking/api/dashboard');
+                const response = await fetch('api/dashboard');
                 
                 console.log('API Response status:', response.status);
                 console.log('API Response headers:', response.headers);
@@ -187,7 +187,7 @@ if (file_exists($headerPath)) {
             content.innerHTML = '<div class="text-center text-gray-500">Loading email...</div>';
             
             try {
-                const response = await fetch(`/networkemailtracking/api/emails/${emailId}`);
+                const response = await fetch(`api/emails/${emailId}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
