@@ -55,10 +55,7 @@ if (file_exists($headerPath)) {
 }
 ?>
 
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com"></script>
-
-<!-- Email Drafter CSS for Navigation Styling -->
+<!-- Email Drafter CSS for consistent styling -->
 <link href="public/css/email-drafter.css" rel="stylesheet">
 
 <body class="bg-gray-50">
@@ -74,109 +71,86 @@ if (file_exists($headerPath)) {
         </div>
     </nav>
 
-    <div class="container mx-auto px-4 py-8">
-        <div class="bg-white rounded-lg shadow max-w-4xl mx-auto">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900">📱 LinkedIn Message Logger</h2>
-                <p class="text-sm text-gray-500 mt-1">Track your LinkedIn outreach and responses in one place</p>
-            </div>
-            <div class="p-6">
+    <div class="container">
+        <div class="card">
+            <div class="card-content">
                 <div id="alert" class="hidden mb-4"></div>
 
-                <form id="linkedinForm" class="space-y-6">
+                <!-- Name Tabs -->
+                <div class="name-tabs">
+                    <button class="name-tab active" data-email="charlie@veerless.com">Charlie</button>
+                    <button class="name-tab inactive" data-email="marcy@veerless.com">Marcy</button>
+                    <button class="name-tab inactive" data-email="ann@veerless.com">Ann</button>
+                    <button class="name-tab inactive" data-email="kristen@veerless.com">Kristen</button>
+                    <button class="name-tab inactive" data-email="katie@veerless.com">Katie</button>
+                    <button class="name-tab inactive" data-email="tameka@veerless.com">Tameka</button>
+                </div>
+
+                <form id="linkedinForm">
                     <!-- LinkedIn URL -->
-                    <div>
-                        <label for="linkedinUrl" class="block text-sm font-medium text-gray-700 mb-1">
-                            LinkedIn Profile URL <span class="text-red-600">*</span>
+                    <div class="form-field">
+                        <label for="linkedinUrl" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #374151;">
+                            LinkedIn Profile URL <span style="color: #dc2626;">*</span>
                         </label>
                         <input 
                             type="url" 
                             id="linkedinUrl" 
                             name="linkedinUrl" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="form-input"
                             placeholder="https://www.linkedin.com/in/username"
                             required
                         >
-                        <p class="mt-1 text-sm text-gray-500">
+                        <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #6b7280;">
                             Paste the full LinkedIn profile URL (e.g., https://www.linkedin.com/in/john-doe)
                         </p>
-                        <div id="urlPreview" class="hidden mt-2 p-2 bg-blue-50 rounded text-sm text-gray-700">
-                            <strong class="text-blue-700">Normalized URL:</strong> <span id="normalizedUrl"></span>
+                        <div id="urlPreview" class="hidden" style="margin-top: 0.5rem; padding: 0.5rem; background: #eff6ff; border-radius: 0.25rem; font-size: 0.875rem; color: #1f2937;">
+                            <strong style="color: #2563eb;">Normalized URL:</strong> <span id="normalizedUrl"></span>
                         </div>
                     </div>
 
                     <!-- Message -->
-                    <div>
-                        <label for="messageText" class="block text-sm font-medium text-gray-700 mb-1">
-                            Message <span class="text-red-600">*</span>
+                    <div class="form-field">
+                        <label for="messageText" style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #374151;">
+                            Message <span style="color: #dc2626;">*</span>
                         </label>
                         <textarea 
                             id="messageText" 
                             name="messageText" 
                             rows="6"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                            class="form-input"
+                            style="resize: vertical; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
                             placeholder="Paste your LinkedIn message here..."
                             required
                         ></textarea>
-                        <p class="mt-1 text-sm text-gray-500">
+                        <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #6b7280;">
                             Copy and paste the message you sent or received on LinkedIn
                         </p>
                     </div>
 
                     <!-- Direction -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Direction <span class="text-red-600">*</span>
+                    <div class="form-field">
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: #374151;">
+                            Direction <span style="color: #dc2626;">*</span>
                         </label>
-                        <div class="flex gap-6">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" id="directionSent" name="direction" value="outbound" checked
-                                    class="w-4 h-4 text-blue-600 focus:ring-blue-500">
-                                <span class="text-sm text-gray-700">📤 Sent (You sent this message)</span>
+                        <div style="display: flex; gap: 1.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" id="directionSent" name="direction" value="outbound" checked>
+                                <span style="font-size: 0.875rem; color: #374151;">📤 Sent (You sent this message)</span>
                             </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" id="directionReceived" name="direction" value="inbound"
-                                    class="w-4 h-4 text-blue-600 focus:ring-blue-500">
-                                <span class="text-sm text-gray-700">📥 Received (They replied to you)</span>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" id="directionReceived" name="direction" value="inbound">
+                                <span style="font-size: 0.875rem; color: #374151;">📥 Received (They replied to you)</span>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Sender Email -->
-                    <div>
-                        <label for="senderEmail" class="block text-sm font-medium text-gray-700 mb-1">
-                            Your Email <span class="text-red-600">*</span>
-                        </label>
-                        <select 
-                            id="senderEmail" 
-                            name="senderEmail" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            required
-                        >
-                            <option value="">-- Select your email --</option>
-                            <option value="charlie@veerless.com">Charlie (charlie@veerless.com)</option>
-                            <option value="sarah@veerless.com">Sarah (sarah@veerless.com)</option>
-                            <option value="networking@veerless.com">Networking (networking@veerless.com)</option>
-                        </select>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Select who sent or received this message
-                        </p>
-                    </div>
-
                     <!-- Actions -->
-                    <div class="flex gap-3 pt-4 border-t border-gray-200">
+                    <div>
                         <button 
                             type="submit" 
-                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium transition-colors"
+                            class="btn btn-primary"
                         >
                             💾 Log Message
-                        </button>
-                        <button 
-                            type="button" 
-                            onclick="resetForm()"
-                            class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium transition-colors"
-                        >
-                            🔄 Clear Form
                         </button>
                     </div>
                 </form>
@@ -185,6 +159,29 @@ if (file_exists($headerPath)) {
     </div>
 
     <script>
+        // Track active user
+        let activeUser = 'charlie';
+        let activeSenderEmail = 'charlie@veerless.com';
+
+        // Name tab switching
+        document.querySelectorAll('.name-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                document.querySelectorAll('.name-tab').forEach(t => {
+                    t.classList.remove('active');
+                    t.classList.add('inactive');
+                });
+                
+                // Add active class to clicked tab
+                this.classList.remove('inactive');
+                this.classList.add('active');
+                
+                // Update active user
+                activeUser = this.textContent.toLowerCase();
+                activeSenderEmail = this.dataset.email;
+            });
+        });
+
         // URL normalization preview
         const linkedinUrlInput = document.getElementById('linkedinUrl');
         const urlPreview = document.getElementById('urlPreview');
@@ -221,12 +218,12 @@ if (file_exists($headerPath)) {
                 linkedin_url: document.getElementById('linkedinUrl').value.trim(),
                 message_text: document.getElementById('messageText').value.trim(),
                 direction: document.querySelector('input[name="direction"]:checked').value,
-                sender_email: document.getElementById('senderEmail').value,
+                sender_email: activeSenderEmail,
                 sent_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
             };
 
             // Validation
-            if (!formData.linkedin_url || !formData.message_text || !formData.sender_email) {
+            if (!formData.linkedin_url || !formData.message_text) {
                 showAlert('Please fill in all required fields', 'error');
                 return;
             }
@@ -280,18 +277,21 @@ if (file_exists($headerPath)) {
         });
 
         function showAlert(message, type) {
-            const bgColor = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+            const styles = type === 'success' 
+                ? 'padding: 1rem; margin-bottom: 1rem; border-radius: 0.25rem; background-color: #d1fae5; border: 1px solid #6ee7b7; color: #065f46;'
+                : 'padding: 1rem; margin-bottom: 1rem; border-radius: 0.25rem; background-color: #fee2e2; border: 1px solid #fca5a5; color: #991b1b;';
             alertBox.textContent = message;
-            alertBox.className = `p-4 mb-4 rounded border ${bgColor}`;
+            alertBox.style.cssText = styles;
+            alertBox.classList.remove('hidden');
             setTimeout(() => {
-                alertBox.className = 'hidden mb-4';
+                alertBox.classList.add('hidden');
             }, 5000);
         }
 
         function resetForm() {
             form.reset();
             urlPreview.classList.add('hidden');
-            alertBox.className = 'hidden mb-4';
+            alertBox.classList.add('hidden');
         }
     </script>
 
