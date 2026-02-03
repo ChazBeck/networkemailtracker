@@ -209,12 +209,17 @@ if (file_exists($headerPath)) {
                                 ${data.contacts.map((contact, index) => `
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
-                                            <div class="text-sm font-medium text-gray-900">
-                                                ${contact.full_name || contact.email}
+                                            <div class="flex items-center gap-2">
+                                                ${contact.source === 'linkedin' ? '<span class="text-blue-600">💼</span>' : '<span class="text-purple-600">📧</span>'}
+                                                <div>
+                                                    <div class="text-sm font-medium text-gray-900">
+                                                        ${contact.full_name || contact.email}
+                                                    </div>
+                                                    ${contact.first_name && contact.last_name ? 
+                                                        `<div class="text-xs text-gray-500">${contact.first_name} ${contact.last_name}</div>` : 
+                                                        ''}
+                                                </div>
                                             </div>
-                                            ${contact.first_name && contact.last_name ? 
-                                                `<div class="text-xs text-gray-500">${contact.first_name} ${contact.last_name}</div>` : 
-                                                ''}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
                                             <div class="text-sm text-gray-900">${contact.company_name || '-'}</div>
@@ -223,7 +228,12 @@ if (file_exists($headerPath)) {
                                             <div class="text-sm text-gray-900">${contact.job_title || '-'}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
-                                            <div class="text-sm text-gray-600">${contact.email}</div>
+                                            <div class="text-sm text-gray-600">
+                                                ${contact.source === 'linkedin' 
+                                                    ? `<a href="${contact.linkedin_url}" target="_blank" class="text-blue-600 hover:underline" onclick="event.stopPropagation()">LinkedIn Profile</a>`
+                                                    : contact.email
+                                                }
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap cursor-pointer" onclick="viewContactThreads('${contact.email}')">
                                             <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">

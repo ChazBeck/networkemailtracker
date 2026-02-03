@@ -224,11 +224,46 @@ class DashboardController
     public function getContacts(): void
     {
         try {
-            $contacts = $this->threadRepo->getContactsGroupedByEmail();
+            // Get email contacts
+            $emailContacts = $this->threadRepo->getContactsGroupedByEmail();
+            
+            // Get LinkedIn contacts if available
+            $linkedInContacts = [];
+            if ($this->linkedInThreadRepo) {
+                $stmt = $this->linkedInThreadRepo->db->prepare("
+                    SELECT 
+                        lt.external_linkedin_url as linkedin_url,
+                        lt.external_linkedin_url as email,
+                        COUNT(DISTINCT lt.id) as thread_count,
+                        MAX(lt.updated_at) as last_contact,
+                        MAX(ce.id) as enrichment_id,
+                        MAX(ce.first_name) as first_name,
+                        MAX(ce.last_name) as last_name,
+                        MAX(ce.full_name) as full_name,
+                        MAX(ce.company_name) as company_name,
+                        MAX(ce.company_url) as company_url,
+                        MAX(ce.external_linkedin_url) as original_linkedin_url,
+                        MAX(ce.job_title) as job_title,
+                        MAX(ce.enrichment_status) as enrichment_status,
+                        'linkedin' as source
+                    FROM linkedin_threads lt
+                    LEFT JOIN contact_enrichment ce ON lt.id = ce.linkedin_thread_id
+                    GROUP BY lt.external_linkedin_url
+                    ORDER BY MAX(lt.updated_at) DESC
+                ");
+                $stmt->execute();
+                $linkedInContacts = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            }
+            
+            // Merge contacts and remove duplicates (prefer email contacts if same person)
+            $allContacts = array_merge($emailContacts, $linkedInContacts);
+            
+            // Sort by last_contact desc
+            usort($allContacts, fn($a, $b) => strtotime($b['last_contact']) - strtotime($a['last_contact']));
             
             JsonResponse::success([
-                'contacts' => $contacts,
-                'total' => count($contacts)
+                'contacts' => $allContacts,
+                'total' => count($allContacts)
             ])->send();
         } catch (\PDOException $e) {
             error_log("Database error in getContacts: " . $e->getMessage());
