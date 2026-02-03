@@ -55,274 +55,133 @@ if (file_exists($headerPath)) {
 }
 ?>
 
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Email Drafter CSS for Navigation Styling -->
 <link href="public/css/email-drafter.css" rel="stylesheet">
 
-<style>
-    .linkedin-form-container {
-        max-width: 800px;
-        margin: 40px auto;
-        padding: 30px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    
-    .form-header {
-        margin-bottom: 30px;
-        border-bottom: 2px solid #0077B5;
-        padding-bottom: 15px;
-    }
-    
-    .form-header h1 {
-        color: #0077B5;
-        margin: 0 0 10px 0;
-        font-size: 28px;
-    }
-    
-    .form-header p {
-        color: #666;
-        margin: 0;
-    }
-    
-    .form-group {
-        margin-bottom: 25px;
-    }
-    
-    .form-group label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 8px;
-        color: #333;
-    }
-    
-    .form-group label .required {
-        color: #dc3545;
-    }
-    
-    .form-group input[type="text"],
-    .form-group input[type="url"],
-    .form-group textarea,
-    .form-group select {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        box-sizing: border-box;
-    }
-    
-    .form-group textarea {
-        min-height: 150px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        resize: vertical;
-    }
-    
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-        outline: none;
-        border-color: #0077B5;
-        box-shadow: 0 0 0 3px rgba(0,119,181,0.1);
-    }
-    
-    .url-preview {
-        margin-top: 8px;
-        padding: 8px 12px;
-        background: #f8f9fa;
-        border-radius: 4px;
-        font-size: 13px;
-        color: #666;
-        display: none;
-    }
-    
-    .url-preview.show {
-        display: block;
-    }
-    
-    .url-preview strong {
-        color: #0077B5;
-    }
-    
-    .radio-group {
-        display: flex;
-        gap: 20px;
-    }
-    
-    .radio-option {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .radio-option input[type="radio"] {
-        width: auto;
-    }
-    
-    .form-actions {
-        display: flex;
-        gap: 15px;
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid #eee;
-    }
-    
-    .btn {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 4px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .btn-primary {
-        background: #0077B5;
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        background: #005a8c;
-    }
-    
-    .btn-secondary {
-        background: #6c757d;
-        color: white;
-    }
-    
-    .btn-secondary:hover {
-        background: #5a6268;
-    }
-    
-    .alert {
-        padding: 15px;
-        margin-bottom: 20px;
-        border-radius: 4px;
-        display: none;
-    }
-    
-    .alert.show {
-        display: block;
-    }
-    
-    .alert-success {
-        background: #d4edda;
-        border: 1px solid #c3e6cb;
-        color: #155724;
-    }
-    
-    .alert-error {
-        background: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-    }
-    
-    .help-text {
-        font-size: 13px;
-        color: #6c757d;
-        margin-top: 5px;
-    }
-</style>
-
-<body>
+<body class="bg-gray-50">
     <!-- Navigation Bar -->
     <nav class="nav">
         <div class="nav-container">
-            <div class="nav-brand">
-                <a href="dashboard.php">Mail Tracker</a>
+            <div class="nav-links">
+                <a href="dashboard.php" class="nav-link">Dashboard</a>
+                <a href="contacts.php" class="nav-link">Contacts</a>
+                <a href="email-drafter.php" class="nav-link">Email Drafter</a>
+                <a href="linkedin-logger.php" class="nav-link active">LinkedIn Logger</a>
             </div>
-            <ul class="nav-menu">
-                <li><a href="dashboard.php">Dashboard</a></li>
-                <li><a href="email-drafter.php">Email Drafter</a></li>
-                <li><a href="linkedin-logger.php" class="active">LinkedIn Logger</a></li>
-                <li><a href="contacts.php">Contacts</a></li>
-            </ul>
         </div>
     </nav>
 
-    <div class="linkedin-form-container">
-        <div class="form-header">
-            <h1>📱 LinkedIn Message Logger</h1>
-            <p>Track your LinkedIn outreach and responses in one place</p>
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg shadow max-w-4xl mx-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">📱 LinkedIn Message Logger</h2>
+                <p class="text-sm text-gray-500 mt-1">Track your LinkedIn outreach and responses in one place</p>
+            </div>
+            <div class="p-6">
+                <div id="alert" class="hidden mb-4"></div>
+
+                <form id="linkedinForm" class="space-y-6">
+                    <!-- LinkedIn URL -->
+                    <div>
+                        <label for="linkedinUrl" class="block text-sm font-medium text-gray-700 mb-1">
+                            LinkedIn Profile URL <span class="text-red-600">*</span>
+                        </label>
+                        <input 
+                            type="url" 
+                            id="linkedinUrl" 
+                            name="linkedinUrl" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="https://www.linkedin.com/in/username"
+                            required
+                        >
+                        <p class="mt-1 text-sm text-gray-500">
+                            Paste the full LinkedIn profile URL (e.g., https://www.linkedin.com/in/john-doe)
+                        </p>
+                        <div id="urlPreview" class="hidden mt-2 p-2 bg-blue-50 rounded text-sm text-gray-700">
+                            <strong class="text-blue-700">Normalized URL:</strong> <span id="normalizedUrl"></span>
+                        </div>
+                    </div>
+
+                    <!-- Message -->
+                    <div>
+                        <label for="messageText" class="block text-sm font-medium text-gray-700 mb-1">
+                            Message <span class="text-red-600">*</span>
+                        </label>
+                        <textarea 
+                            id="messageText" 
+                            name="messageText" 
+                            rows="6"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+                            placeholder="Paste your LinkedIn message here..."
+                            required
+                        ></textarea>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Copy and paste the message you sent or received on LinkedIn
+                        </p>
+                    </div>
+
+                    <!-- Direction -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Direction <span class="text-red-600">*</span>
+                        </label>
+                        <div class="flex gap-6">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" id="directionSent" name="direction" value="outbound" checked
+                                    class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">📤 Sent (You sent this message)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" id="directionReceived" name="direction" value="inbound"
+                                    class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">📥 Received (They replied to you)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Sender Email -->
+                    <div>
+                        <label for="senderEmail" class="block text-sm font-medium text-gray-700 mb-1">
+                            Your Email <span class="text-red-600">*</span>
+                        </label>
+                        <select 
+                            id="senderEmail" 
+                            name="senderEmail" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                        >
+                            <option value="">-- Select your email --</option>
+                            <option value="charlie@veerless.com">Charlie (charlie@veerless.com)</option>
+                            <option value="sarah@veerless.com">Sarah (sarah@veerless.com)</option>
+                            <option value="networking@veerless.com">Networking (networking@veerless.com)</option>
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Select who sent or received this message
+                        </p>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-3 pt-4 border-t border-gray-200">
+                        <button 
+                            type="submit" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium transition-colors"
+                        >
+                            💾 Log Message
+                        </button>
+                        <button 
+                            type="button" 
+                            onclick="resetForm()"
+                            class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium transition-colors"
+                        >
+                            🔄 Clear Form
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-
-        <div id="alert" class="alert"></div>
-
-        <form id="linkedinForm">
-            <div class="form-group">
-                <label for="linkedinUrl">
-                    LinkedIn Profile URL <span class="required">*</span>
-                </label>
-                <input 
-                    type="url" 
-                    id="linkedinUrl" 
-                    name="linkedinUrl" 
-                    placeholder="https://www.linkedin.com/in/username"
-                    required
-                >
-                <div class="help-text">
-                    Paste the full LinkedIn profile URL (e.g., https://www.linkedin.com/in/john-doe)
-                </div>
-                <div id="urlPreview" class="url-preview">
-                    <strong>Normalized URL:</strong> <span id="normalizedUrl"></span>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="messageText">
-                    Message <span class="required">*</span>
-                </label>
-                <textarea 
-                    id="messageText" 
-                    name="messageText" 
-                    placeholder="Paste your LinkedIn message here..."
-                    required
-                ></textarea>
-                <div class="help-text">
-                    Copy and paste the message you sent or received on LinkedIn
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>
-                    Direction <span class="required">*</span>
-                </label>
-                <div class="radio-group">
-                    <div class="radio-option">
-                        <input type="radio" id="directionSent" name="direction" value="outbound" checked>
-                        <label for="directionSent" style="margin: 0; font-weight: normal;">📤 Sent (You sent this message)</label>
-                    </div>
-                    <div class="radio-option">
-                        <input type="radio" id="directionReceived" name="direction" value="inbound">
-                        <label for="directionReceived" style="margin: 0; font-weight: normal;">📥 Received (They replied to you)</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="senderEmail">
-                    Your Email <span class="required">*</span>
-                </label>
-                <select id="senderEmail" name="senderEmail" required>
-                    <option value="">-- Select your email --</option>
-                    <option value="charlie@veerless.com">Charlie (charlie@veerless.com)</option>
-                    <option value="sarah@veerless.com">Sarah (sarah@veerless.com)</option>
-                    <option value="networking@veerless.com">Networking (networking@veerless.com)</option>
-                </select>
-                <div class="help-text">
-                    Select who sent or received this message
-                </div>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                    💾 Log Message
-                </button>
-                <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                    🔄 Clear Form
-                </button>
-            </div>
-        </form>
     </div>
 
     <script>
@@ -345,9 +204,9 @@ if (file_exists($headerPath)) {
                 }
                 
                 normalizedUrlSpan.textContent = normalized;
-                urlPreview.classList.add('show');
+                urlPreview.classList.remove('hidden');
             } else {
-                urlPreview.classList.remove('show');
+                urlPreview.classList.add('hidden');
             }
         });
 
@@ -421,17 +280,18 @@ if (file_exists($headerPath)) {
         });
 
         function showAlert(message, type) {
+            const bgColor = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
             alertBox.textContent = message;
-            alertBox.className = `alert alert-${type} show`;
+            alertBox.className = `p-4 mb-4 rounded border ${bgColor}`;
             setTimeout(() => {
-                alertBox.classList.remove('show');
+                alertBox.className = 'hidden mb-4';
             }, 5000);
         }
 
         function resetForm() {
             form.reset();
-            urlPreview.classList.remove('show');
-            alertBox.classList.remove('show');
+            urlPreview.classList.add('hidden');
+            alertBox.className = 'hidden mb-4';
         }
     </script>
 

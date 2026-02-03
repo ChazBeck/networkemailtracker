@@ -60,9 +60,10 @@ if (file_exists($headerPath)) {
     <nav class="nav">
         <div class="nav-container">
             <div class="nav-links">
-                <a href="dashboard.php" class="nav-link">Email Log</a>
+                <a href="dashboard.php" class="nav-link">Dashboard</a>
                 <a href="contacts.php" class="nav-link active">Contacts</a>
                 <a href="email-drafter.php" class="nav-link">Email Drafter</a>
+                <a href="linkedin-logger.php" class="nav-link">LinkedIn Logger</a>
             </div>
         </div>
     </nav>
