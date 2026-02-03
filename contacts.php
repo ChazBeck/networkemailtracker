@@ -4,16 +4,49 @@ require_once __DIR__ . '/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
+// Check environment for production safety
+$isProduction = ($_ENV['APP_ENV'] ?? 'production') === 'production';
+
 // Initialize SSO authentication
-require_once __DIR__ . '/includes/auth-init.php';
+$authInitPath = __DIR__ . '/includes/auth-init.php';
+if (file_exists($authInitPath)) {
+    require_once $authInitPath;
+} elseif ($isProduction) {
+    die('<h1>SECURITY ERROR</h1><p>Authentication system not configured. Contact administrator.</p>');
+} else {
+    error_log("WARNING: Running contacts.php without authentication in local development");
+}
 
-// Include SSO header
-require_once __DIR__ . '/../auth/header-with-sso.php';
-
-// Render SSO head and header
-render_sso_head('Contacts - Mail Tracker');
-render_sso_header();
-?>
+// Include SSO header with environment-aware loading
+$headerPath = __DIR__ . '/../auth/header-with-sso.php';
+if (file_exists($headerPath)) {
+    require_once $headerPath;
+    // Render SSO head and header
+    render_sso_head('Contacts - Mail Tracker');
+    render_sso_header();
+} elseif ($isProduction) {
+    die('<h1>SECURITY ERROR</h1><p>SSO header system not configured. Contact administrator.</p>');
+} else {
+    // Fallback header for local development
+    error_log("WARNING: Using fallback header in local development");
+    ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contacts - Mail Tracker (Local Dev)</title>
+    <style>
+        .dev-warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            color: #856404;
+        }
+    </style>
+<?php } ?>
 
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>

@@ -196,7 +196,9 @@ $container->register('dashboardController', fn($c) => new DashboardController(
     $c->get('emailRepo'),
     $c->get('enrichmentRepo'),
     $c->get('linkTrackingRepo'),
-    $c->get('yourlsClient')
+    $c->get('yourlsClient'),
+    $c->get('linkedInThreadRepo'),
+    $c->get('linkedInMessageRepo')
 ));
 
 $container->register('draftController', fn($c) => new DraftController(

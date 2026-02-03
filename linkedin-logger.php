@@ -379,7 +379,7 @@ if (file_exists($headerPath)) {
             submitBtn.textContent = '⏳ Logging...';
 
             try {
-                const response = await fetch('/api/linkedin/submit', {
+                const response = await fetch('/networkemailtracking/api/linkedin/submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -387,17 +387,32 @@ if (file_exists($headerPath)) {
                     body: JSON.stringify(formData)
                 });
 
-                const result = await response.json();
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const text = await response.text();
+                console.log('Response body:', text);
+                
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    console.error('Failed to parse JSON:', e);
+                    showAlert('❌ Server error: Invalid response format', 'error');
+                    return;
+                }
 
-                if (result.success) {
+                if (response.ok && (result.message_id || result.success !== false)) {
                     showAlert('✅ Message logged successfully!', 'success');
                     setTimeout(() => {
                         resetForm();
                     }, 2000);
                 } else {
                     showAlert('❌ Error: ' + (result.error || 'Failed to log message'), 'error');
+                    console.error('API Error:', result);
                 }
             } catch (error) {
+                console.error('Network error:', error);
                 showAlert('❌ Network error: ' + error.message, 'error');
             } finally {
                 submitBtn.disabled = false;

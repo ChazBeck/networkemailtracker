@@ -7,6 +7,8 @@ use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\EnrichmentRepository;
 use App\Repositories\LinkTrackingRepository;
+use App\Repositories\LinkedInThreadRepository;
+use App\Repositories\LinkedInMessageRepository;
 use App\Services\YourlsClient;
 
 class DashboardController
@@ -15,6 +17,8 @@ class DashboardController
     private EmailRepository $emailRepo;
     private EnrichmentRepository $enrichmentRepo;
     private ?LinkTrackingRepository $linkTrackingRepo;
+    private ?LinkedInThreadRepository $linkedInThreadRepo;
+    private ?LinkedInMessageRepository $linkedInMessageRepo;
     private ?YourlsClient $yourlsClient;
     
     public function __construct(
@@ -22,13 +26,17 @@ class DashboardController
         EmailRepository $emailRepo,
         EnrichmentRepository $enrichmentRepo,
         ?LinkTrackingRepository $linkTrackingRepo = null,
-        ?YourlsClient $yourlsClient = null
+        ?YourlsClient $yourlsClient = null,
+        ?LinkedInThreadRepository $linkedInThreadRepo = null,
+        ?LinkedInMessageRepository $linkedInMessageRepo = null
     ) {
         $this->threadRepo = $threadRepo;
         $this->emailRepo = $emailRepo;
         $this->enrichmentRepo = $enrichmentRepo;
         $this->linkTrackingRepo = $linkTrackingRepo;
         $this->yourlsClient = $yourlsClient;
+        $this->linkedInThreadRepo = $linkedInThreadRepo;
+        $this->linkedInMessageRepo = $linkedInMessageRepo;
     }
     
     /**
@@ -38,15 +46,70 @@ class DashboardController
     public function getData(): void
     {
         try {
-            $threads = $this->threadRepo->getAllWithEmailCount();
+            // Get email threads
+            $emailThreads = $this->threadRepo->getAllWithEmailCount();
             $recentEmails = $this->emailRepo->getRecent(50);
+            
+            // Get LinkedIn threads if available
+            $linkedInThreads = [];
+            $linkedInMessages = [];
+            if ($this->linkedInThreadRepo) {
+                $linkedInThreads = $this->linkedInThreadRepo->getAllWithMessageCount();
+                
+                // Get recent LinkedIn messages for display
+                if ($this->linkedInMessageRepo) {
+                    foreach ($linkedInThreads as $thread) {
+                        $messages = $this->linkedInMessageRepo->findByThreadId($thread['id']);
+                        foreach ($messages as $message) {
+                            $linkedInMessages[] = $message;
+                        }
+                    }
+                    // Sort by sent_at desc, limit to 50
+                    usort($linkedInMessages, fn($a, $b) => strtotime($b['sent_at']) - strtotime($a['sent_at']));
+                    $linkedInMessages = array_slice($linkedInMessages, 0, 50);
+                }
+            }
+            
+            // Combine threads with channel indicator
+            $unifiedThreads = [];
+            
+            // Add email threads
+            foreach ($emailThreads as $thread) {
+                $unifiedThreads[] = array_merge($thread, [
+                    'channel' => 'email',
+                    'contact_identifier' => $thread['external_email'],
+                    'owner' => $thread['internal_sender_email']
+                ]);
+            }
+            
+            // Add LinkedIn threads
+            foreach ($linkedInThreads as $thread) {
+                $unifiedThreads[] = array_merge($thread, [
+                    'channel' => 'linkedin',
+                    'contact_identifier' => $thread['external_linkedin_url'],
+                    'owner' => $thread['owner_email'],
+                    'email_count' => $thread['message_count'] // Normalize field name
+                ]);
+            }
+            
+            // Sort unified threads by last_activity_at desc
+            usort($unifiedThreads, fn($a, $b) => 
+                strtotime($b['last_activity_at'] ?? $b['created_at']) - 
+                strtotime($a['last_activity_at'] ?? $a['created_at'])
+            );
             
             // Get enrichment data for all threads
             $enrichments = [];
-            foreach ($threads as $thread) {
+            foreach ($emailThreads as $thread) {
                 $enrichment = $this->enrichmentRepo->findByThreadId($thread['id']);
                 if ($enrichment && $enrichment['enrichment_status'] === 'complete') {
-                    $enrichments[$thread['id']] = $enrichment;
+                    $enrichments['email_' . $thread['id']] = $enrichment;
+                }
+            }
+            foreach ($linkedInThreads as $thread) {
+                $enrichment = $this->enrichmentRepo->findByLinkedInThreadId($thread['id']);
+                if ($enrichment && $enrichment['enrichment_status'] === 'complete') {
+                    $enrichments['linkedin_' . $thread['id']] = $enrichment;
                 }
             }
             
@@ -70,13 +133,17 @@ class DashboardController
             }
             
             JsonResponse::success([
-                'threads' => $threads,
+                'threads' => $unifiedThreads,
                 'emails' => $recentEmails,
+                'linkedin_messages' => $linkedInMessages,
                 'enrichments' => $enrichments,
-                'links_by_email' => (object)$linksByEmail, // Force object for empty array
+                'links_by_email' => (object)$linksByEmail,
                 'stats' => [
-                    'total_threads' => count($threads),
-                    'total_emails' => array_sum(array_column($threads, 'email_count')),
+                    'total_threads' => count($unifiedThreads),
+                    'email_threads' => count($emailThreads),
+                    'linkedin_threads' => count($linkedInThreads),
+                    'total_emails' => array_sum(array_column($emailThreads, 'email_count')),
+                    'total_linkedin_messages' => array_sum(array_column($linkedInThreads, 'message_count')),
                     'enriched_contacts' => count($enrichments)
                 ]
             ])->send();
