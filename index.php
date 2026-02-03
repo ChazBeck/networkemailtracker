@@ -48,6 +48,9 @@ use App\Repositories\EnrichmentRepository;
 use App\Repositories\MondaySyncRepository;
 use App\Repositories\ContactSyncRepository;
 use App\Repositories\LinkTrackingRepository;
+use App\Repositories\LinkedInThreadRepository;
+use App\Repositories\LinkedInMessageRepository;
+use App\Repositories\LinkedInMondaySyncRepository;
 use App\Services\WebhookService;
 use App\Services\EnrichmentService;
 use App\Services\PerplexityService;
@@ -55,10 +58,13 @@ use App\Services\MondayService;
 use App\Services\OutlookDraftService;
 use App\Services\YourlsClient;
 use App\Services\LinkTrackingService;
+use App\Services\LinkedInWebhookService;
+use App\Services\LinkedInUrlNormalizer;
 use App\Controllers\WebhookController;
 use App\Controllers\DashboardController;
 use App\Controllers\DraftController;
 use App\Controllers\MondayController;
+use App\Controllers\LinkedInController;
 
 // Load environment variables
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
@@ -111,6 +117,9 @@ $container->singleton('enrichmentRepo', fn($c) => new EnrichmentRepository($c->g
 $container->singleton('syncRepo', fn($c) => new MondaySyncRepository($c->get('db')));
 $container->singleton('contactSyncRepo', fn($c) => new ContactSyncRepository($c->get('db')));
 $container->singleton('linkTrackingRepo', fn($c) => new LinkTrackingRepository($c->get('db'), $c->get('logger')));
+$container->singleton('linkedInThreadRepo', fn($c) => new LinkedInThreadRepository($c->get('db')));
+$container->singleton('linkedInMessageRepo', fn($c) => new LinkedInMessageRepository($c->get('db')));
+$container->singleton('linkedInSyncRepo', fn($c) => new LinkedInMondaySyncRepository($c->get('db')));
 
 // Register services
 $container->singleton('webhookService', fn($c) => new WebhookService(
@@ -126,7 +135,8 @@ $container->singleton('enrichmentService', fn($c) => new EnrichmentService(
     $c->get('enrichmentRepo'),
     $c->get('threadRepo'),
     $c->get('perplexityService'),
-    $c->get('logger')
+    $c->get('logger'),
+    $c->get('linkedInThreadRepo')
 ));
 
 $container->singleton('mondayService', fn($c) => new MondayService(
@@ -136,7 +146,10 @@ $container->singleton('mondayService', fn($c) => new MondayService(
     $c->get('emailRepo'),
     $c->get('logger'),
     null, // HttpClient
-    $c->get('contactSyncRepo')
+    $c->get('contactSyncRepo'),
+    $c->get('linkedInThreadRepo'),
+    $c->get('linkedInMessageRepo'),
+    $c->get('linkedInSyncRepo')
 ));
 
 // Register YOURLS services (optional)
@@ -158,6 +171,16 @@ $container->singleton('outlookDraftService', fn($c) => new OutlookDraftService(
     $c->get('logger'),
     $c->get('db'),
     $c->get('linkTrackingService')
+));
+
+// LinkedIn services
+$container->singleton('linkedInUrlNormalizer', fn($c) => new LinkedInUrlNormalizer());
+
+$container->singleton('linkedInWebhookService', fn($c) => new LinkedInWebhookService(
+    $c->get('linkedInThreadRepo'),
+    $c->get('linkedInMessageRepo'),
+    $c->get('linkedInUrlNormalizer'),
+    $c->get('logger')
 ));
 
 // Register controllers
@@ -187,11 +210,21 @@ $container->register('mondayController', fn($c) => new MondayController(
     $c->get('logger')
 ));
 
+$container->register('linkedInController', fn($c) => new LinkedInController(
+    $c->get('linkedInWebhookService'),
+    $c->get('enrichmentService'),
+    $c->get('mondayService'),
+    $c->get('linkedInThreadRepo'),
+    $c->get('linkedInMessageRepo'),
+    $c->get('logger')
+));
+
 // Get controllers from container
 $webhookController = $container->get('webhookController');
 $dashboardController = $container->get('dashboardController');
 $draftController = $container->get('draftController');
 $mondayController = $container->get('mondayController');
+$linkedInController = $container->get('linkedInController');
 
 // Get request details
 $method = $_SERVER['REQUEST_METHOD'];
@@ -237,6 +270,12 @@ $router->get('/email-drafter', function($params) {
     require __DIR__ . '/email-drafter.php';
 });
 
+// LinkedIn Logger Page (require SSO authentication)
+$router->get('/linkedin-logger', function($params) {
+    // Authentication is handled within linkedin-logger.php itself
+    require __DIR__ . '/linkedin-logger.php';
+});
+
 // Dashboard API
 $router->get('/api/dashboard', function($params) use ($dashboardController) {
     $dashboardController->getData();
@@ -280,6 +319,19 @@ $router->post('/api/webhook/email', function($params) use ($webhookController) {
 // Draft email creation endpoint
 $router->post('/api/draft/create', function($params) use ($draftController) {
     $draftController->create();
+});
+
+// LinkedIn endpoints
+$router->post('/api/linkedin/submit', function($params) use ($linkedInController) {
+    $linkedInController->submitMessage();
+});
+
+$router->get('/api/linkedin/threads', function($params) use ($linkedInController) {
+    $linkedInController->getThreads();
+});
+
+$router->get('/api/linkedin/thread/{id}', function($params) use ($linkedInController) {
+    $linkedInController->viewThread((int)$params['id']);
 });
 
 // Future webhook endpoints can be added here:
