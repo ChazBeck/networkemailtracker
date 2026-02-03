@@ -502,15 +502,10 @@ class MondayService
         // Build column values
         $columnValues = [];
         
-        // Status - map to Monday board's actual status labels
+        // Status - all contacts default to "Emailed" since they're people we've sent emails to
+        // User can manually update to: Responded, Meet, or Client as relationship progresses
         if ($this->contactsColumnIds['status']) {
-            $status = match($contact['enrichment_status'] ?? null) {
-                'complete' => 'Done',
-                'pending' => 'Working on it',
-                'failed' => 'Stuck',
-                default => 'Working on it'
-            };
-            $columnValues[$this->contactsColumnIds['status']] = ['label' => $status];
+            $columnValues[$this->contactsColumnIds['status']] = ['label' => 'Emailed'];
         }
         
         // Date (last contact)
@@ -605,16 +600,8 @@ class MondayService
         // Build column values for update
         $columnValues = [];
         
-        // Status - map to Monday board's actual status labels
-        if ($this->contactsColumnIds['status']) {
-            $status = match($contact['enrichment_status'] ?? null) {
-                'complete' => 'Done',
-                'pending' => 'Working on it',
-                'failed' => 'Stuck',
-                default => 'Working on it'
-            };
-            $columnValues[$this->contactsColumnIds['status']] = ['label' => $status];
-        }
+        // Status - don't override existing status on update, let user manage the funnel stage
+        // Only set on creation, not on updates
         
         // Date (last contact)
         if ($this->contactsColumnIds['date'] && $contact['last_contact']) {
