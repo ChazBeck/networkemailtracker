@@ -64,7 +64,9 @@ class EnrichmentRepository implements EnrichmentRepositoryInterface
         $stmt = $this->db->prepare('
             INSERT INTO contact_enrichment (
                 thread_id,
+                linkedin_thread_id,
                 external_email,
+                external_linkedin_url,
                 first_name,
                 last_name,
                 full_name,
@@ -79,12 +81,14 @@ class EnrichmentRepository implements EnrichmentRepositoryInterface
                 raw_response,
                 error_message,
                 enriched_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         
         $stmt->execute([
-            $data['thread_id'],
-            $data['external_email'],
+            $data['thread_id'] ?? null,
+            $data['linkedin_thread_id'] ?? null,
+            $data['external_email'] ?? null,
+            $data['external_linkedin_url'] ?? null,
             $data['first_name'] ?? null,
             $data['last_name'] ?? null,
             $data['full_name'] ?? null,
@@ -247,4 +251,81 @@ class EnrichmentRepository implements EnrichmentRepositoryInterface
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result ?: null;
     }
+    
+    /**
+     * Find enrichment by LinkedIn thread ID
+     * 
+     * @param int $linkedInThreadId
+     * @return array|null
+     */
+    public function findByLinkedInThreadId(int $linkedInThreadId): ?array
+    {
+        $stmt = $this->db->prepare('
+            SELECT * FROM contact_enrichment 
+            WHERE linkedin_thread_id = ? 
+            LIMIT 1
+        ');
+        $stmt->execute([$linkedInThreadId]);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ?: null;
+    }
+    
+    /**
+     * Find enrichment by LinkedIn URL (across any thread type)
+     * 
+     * @param string $linkedInUrl
+     * @return array|null
+     */
+    public function findByLinkedInUrl(string $linkedInUrl): ?array
+    {
+        $stmt = $this->db->prepare('
+            SELECT * FROM contact_enrichment 
+            WHERE external_linkedin_url = ? OR linkedin_url = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+        ');
+        $stmt->execute([$linkedInUrl, $linkedInUrl]);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ?: null;
+    }
+    
+    /**
+     * Update enrichment by LinkedIn thread ID
+     * 
+     * @param int $linkedInThreadId
+     * @param array $data
+     * @return bool
+     */
+    public function updateByLinkedInThreadId(int $linkedInThreadId, array $data): bool
+    {
+        $fields = [];
+        $params = [];
+        
+        $allowedFields = [
+            'first_name', 'last_name', 'full_name', 'company_name', 'company_url',
+            'linkedin_url', 'job_title', 'enrichment_status', 'confidence_score',
+            'raw_prompt', 'raw_response', 'error_message', 'enriched_at',
+            'external_linkedin_url'
+        ];
+        
+        foreach ($allowedFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $fields[] = "$field = ?";
+                $params[] = $data[$field];
+            }
+        }
+        
+        if (empty($fields)) {
+            return false;
+        }
+        
+        $params[] = $linkedInThreadId;
+        $sql = "UPDATE contact_enrichment SET " . implode(', ', $fields) . " WHERE linkedin_thread_id = ?";
+        
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
+    }
 }
+

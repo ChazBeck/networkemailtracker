@@ -211,4 +211,89 @@ class PerplexityService
             'confidence' => $enrichedData['confidence'] ?? 0.5
         ];
     }
+    
+    /**
+     * Enrich contact from LinkedIn profile URL
+     * 
+     * @param string $linkedInUrl LinkedIn profile URL to enrich
+     * @param array $context Additional context
+     * @return array Enriched data
+     */
+    public function enrichContactFromLinkedIn(string $linkedInUrl, array $context = []): array
+    {
+        // Skip if API key not configured
+        if (empty($this->apiKey)) {
+            return [
+                'success' => false,
+                'error' => 'Perplexity API key not configured',
+                'data' => []
+            ];
+        }
+        
+        $this->logger->info('Enriching contact from LinkedIn URL', [
+            'linkedin_url' => $linkedInUrl
+        ]);
+        
+        // Build prompt focused on LinkedIn profile
+        $prompt = $this->buildLinkedInEnrichmentPrompt($linkedInUrl, $context);
+        
+        try {
+            $response = $this->callAPI($prompt);
+            $enrichedData = $this->parseEnrichmentResponse($response);
+            
+            $this->logger->info('Contact enriched successfully from LinkedIn', [
+                'linkedin_url' => $linkedInUrl,
+                'confidence' => $enrichedData['confidence']
+            ]);
+            
+            return [
+                'success' => true,
+                'data' => $enrichedData,
+                'raw_prompt' => $prompt,
+                'raw_response' => $response
+            ];
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to enrich contact from LinkedIn', [
+                'linkedin_url' => $linkedInUrl,
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'data' => [],
+                'raw_prompt' => $prompt,
+                'raw_response' => null
+            ];
+        }
+    }
+    
+    /**
+     * Build enrichment prompt for LinkedIn profile
+     * 
+     * @param string $linkedInUrl LinkedIn profile URL
+     * @param array $context Additional context
+     * @return string Formatted prompt
+     */
+    private function buildLinkedInEnrichmentPrompt(string $linkedInUrl, array $context): string
+    {
+        $prompt = "Research and provide information about the person with LinkedIn profile: {$linkedInUrl}\n\n";
+        
+        $prompt .= "Please provide ONLY a JSON object with these fields (set to null if you cannot find the information):\n";
+        $prompt .= "{\n";
+        $prompt .= '  "first_name": "First name",'."\n";
+        $prompt .= '  "last_name": "Last name",'."\n";
+        $prompt .= '  "full_name": "Full name",'."\n";
+        $prompt .= '  "company_name": "Current company name",'."\n";
+        $prompt .= '  "company_url": "Company website URL",'."\n";
+        $prompt .= '  "linkedin_url": "' . $linkedInUrl . '",'."\n";
+        $prompt .= '  "job_title": "Current job title",'."\n";
+        $prompt .= '  "confidence": 0.85'."\n";
+        $prompt .= "}\n\n";
+        $prompt .= "Return ONLY the JSON object, no additional text or explanation.";
+        
+        return $prompt;
+    }
 }
+
