@@ -124,13 +124,6 @@ $container->singleton('linkedInSyncRepo', fn($c) => new LinkedInMondaySyncReposi
 $container->singleton('bizDevSyncRepo', fn($c) => new BizDevSyncRepository($c->get('db')));
 
 // Register services
-$container->singleton('webhookService', fn($c) => new WebhookService(
-    $c->get('threadRepo'),
-    $c->get('emailRepo'),
-    $c->get('logger'),
-    $c->get('linkTrackingRepo')
-));
-
 $container->singleton('perplexityService', fn($c) => new PerplexityService($c->get('logger')));
 
 $container->singleton('enrichmentService', fn($c) => new EnrichmentService(
@@ -179,6 +172,16 @@ $container->singleton('outlookDraftService', fn($c) => new OutlookDraftService(
 
 // LinkedIn services
 $container->singleton('linkedInUrlNormalizer', fn($c) => new LinkedInUrlNormalizer());
+
+// WebhookService needs to be registered after MondayService since it depends on it
+$container->singleton('webhookService', fn($c) => new WebhookService(
+    $c->get('threadRepo'),
+    $c->get('emailRepo'),
+    $c->get('logger'),
+    $c->get('linkTrackingRepo'),
+    $c->get('enrichmentRepo'),
+    $c->get('mondayService')
+));
 
 $container->singleton('linkedInWebhookService', fn($c) => new LinkedInWebhookService(
     $c->get('linkedInThreadRepo'),

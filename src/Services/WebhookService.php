@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Repositories\ThreadRepository;
 use App\Repositories\EmailRepository;
 use App\Repositories\LinkTrackingRepository;
+use App\Repositories\EnrichmentRepository;
 use Psr\Log\LoggerInterface;
 
 class WebhookService
@@ -12,18 +13,24 @@ class WebhookService
     private ThreadRepository $threadRepo;
     private EmailRepository $emailRepo;
     private ?LinkTrackingRepository $linkTrackingRepo;
+    private ?EnrichmentRepository $enrichmentRepo;
+    private ?MondayService $mondayService;
     private LoggerInterface $logger;
     
     public function __construct(
         ThreadRepository $threadRepo,
         EmailRepository $emailRepo,
         LoggerInterface $logger,
-        ?LinkTrackingRepository $linkTrackingRepo = null
+        ?LinkTrackingRepository $linkTrackingRepo = null,
+        ?EnrichmentRepository $enrichmentRepo = null,
+        ?MondayService $mondayService = null
     ) {
         $this->threadRepo = $threadRepo;
         $this->emailRepo = $emailRepo;
         $this->logger = $logger;
         $this->linkTrackingRepo = $linkTrackingRepo;
+        $this->enrichmentRepo = $enrichmentRepo;
+        $this->mondayService = $mondayService;
     }
     
     /**
@@ -139,6 +146,9 @@ class WebhookService
         
         // 6. Link draft links to this email if draft_id found in body
         $this->linkDraftLinksToEmail($data['body_text'] ?? '', $emailId);
+        
+        // 7. Check if external contact has existing enrichment that needs BizDev sync
+        $this->checkAndSyncExistingEnrichment($threadId, $participants['external_email']);
         
         $this->logger->info('Email processed successfully', [
             'email_id' => $emailId,
@@ -335,6 +345,53 @@ class WebhookService
                     'links_count' => $linkedCount
                 ]);
             }
+        }
+    }
+    
+    /**
+     * Check if external contact has existing enrichment and sync to BizDev if needed
+     * 
+     * @param int $threadId
+     * @param string $externalEmail
+     * @return void
+     */
+    private function checkAndSyncExistingEnrichment(int $threadId, string $externalEmail): void
+    {
+        if (!$this->enrichmentRepo || !$this->mondayService) {
+            return; // Services not available
+        }
+        
+        try {
+            // Find enrichment for this thread
+            $enrichment = $this->enrichmentRepo->findByThreadId($threadId);
+            
+            if (!$enrichment || $enrichment['enrichment_status'] !== 'complete') {
+                return; // No complete enrichment found
+            }
+            
+            // Load thread data for internal sender info
+            $thread = $this->threadRepo->findById($threadId);
+            if ($thread) {
+                $enrichment['internal_sender_email'] = $thread['internal_sender_email'];
+                $enrichment['last_activity_at'] = $thread['last_activity_at'];
+            }
+            
+            // Attempt to sync to BizDev Pipeline
+            $result = $this->mondayService->syncToBizDevPipeline($enrichment);
+            
+            if ($result['success'] && $result['action'] === 'created') {
+                $this->logger->info('Synced existing enrichment to BizDev Pipeline', [
+                    'enrichment_id' => $enrichment['id'],
+                    'monday_item_id' => $result['monday_item_id'],
+                    'external_email' => $externalEmail
+                ]);
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to sync existing enrichment to BizDev', [
+                'thread_id' => $threadId,
+                'external_email' => $externalEmail,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }
