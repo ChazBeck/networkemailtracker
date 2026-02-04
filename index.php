@@ -120,6 +120,7 @@ $container->singleton('linkTrackingRepo', fn($c) => new LinkTrackingRepository($
 $container->singleton('linkedInThreadRepo', fn($c) => new LinkedInThreadRepository($c->get('db')));
 $container->singleton('linkedInMessageRepo', fn($c) => new LinkedInMessageRepository($c->get('db')));
 $container->singleton('linkedInSyncRepo', fn($c) => new LinkedInMondaySyncRepository($c->get('db')));
+$container->singleton('bizDevSyncRepo', fn($c) => new BizDevSyncRepository($c->get('db')));
 
 // Register services
 $container->singleton('webhookService', fn($c) => new WebhookService(
@@ -136,7 +137,8 @@ $container->singleton('enrichmentService', fn($c) => new EnrichmentService(
     $c->get('threadRepo'),
     $c->get('perplexityService'),
     $c->get('logger'),
-    $c->get('linkedInThreadRepo')
+    $c->get('linkedInThreadRepo'),
+    $c->get('mondayService')
 ));
 
 $container->singleton('mondayService', fn($c) => new MondayService(
@@ -149,7 +151,8 @@ $container->singleton('mondayService', fn($c) => new MondayService(
     $c->get('contactSyncRepo'),
     $c->get('linkedInThreadRepo'),
     $c->get('linkedInMessageRepo'),
-    $c->get('linkedInSyncRepo')
+    $c->get('linkedInSyncRepo'),
+    $c->get('bizDevSyncRepo')
 ));
 
 // Register YOURLS services (optional)
