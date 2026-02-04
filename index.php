@@ -51,6 +51,7 @@ use App\Repositories\LinkTrackingRepository;
 use App\Repositories\LinkedInThreadRepository;
 use App\Repositories\LinkedInMessageRepository;
 use App\Repositories\LinkedInMondaySyncRepository;
+use App\Repositories\BizDevSyncRepository;
 use App\Services\WebhookService;
 use App\Services\EnrichmentService;
 use App\Services\PerplexityService;
