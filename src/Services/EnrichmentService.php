@@ -13,6 +13,7 @@ class EnrichmentService
     private ThreadRepository $threadRepo;
     private ?LinkedInThreadRepository $linkedInThreadRepo;
     private PerplexityService $perplexityService;
+    private ?MondayService $mondayService;
     private LoggerInterface $logger;
     
     public function __construct(
@@ -20,12 +21,14 @@ class EnrichmentService
         ThreadRepository $threadRepo,
         PerplexityService $perplexityService,
         LoggerInterface $logger,
-        ?LinkedInThreadRepository $linkedInThreadRepo = null
+        ?LinkedInThreadRepository $linkedInThreadRepo = null,
+        ?MondayService $mondayService = null
     ) {
         $this->enrichmentRepo = $enrichmentRepo;
         $this->threadRepo = $threadRepo;
         $this->linkedInThreadRepo = $linkedInThreadRepo;
         $this->perplexityService = $perplexityService;
+        $this->mondayService = $mondayService;
         $this->logger = $logger;
     }
     
@@ -174,14 +177,43 @@ class EnrichmentService
             'enriched_at' => date('Y-m-d H:i:s')
         ];
         
+        $enrichmentId = null;
+        
         if ($existing) {
             // Update existing
             $this->enrichmentRepo->update($thread['id'], $enrichmentData);
-            return $existing['id'];
+            $enrichmentId = $existing['id'];
         } else {
             // Create new
-            return $this->enrichmentRepo->create($enrichmentData);
+            $enrichmentId = $this->enrichmentRepo->create($enrichmentData);
         }
+        
+        // Trigger BizDev Pipeline sync after successful enrichment
+        if ($this->mondayService && $enrichmentId) {
+            try {
+                // Get full enrichment record with thread data for internal sender
+                $enrichment = $this->enrichmentRepo->findById($enrichmentId);
+                if ($enrichment) {
+                    // Add internal sender from thread
+                    $enrichment['internal_sender_email'] = $thread['internal_sender_email'] ?? null;
+                    $enrichment['last_activity_at'] = $thread['last_activity_at'] ?? $thread['updated_at'] ?? null;
+                    
+                    $this->mondayService->syncToBizDevPipeline($enrichment);
+                    $this->logger->info('Triggered BizDev Pipeline sync for enrichment', [
+                        'enrichment_id' => $enrichmentId,
+                        'external_email' => $thread['external_email']
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Log but don't fail enrichment if BizDev sync fails
+                $this->logger->warning('Failed to sync to BizDev Pipeline', [
+                    'enrichment_id' => $enrichmentId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        return $enrichmentId;
     }
     
     /**
@@ -408,14 +440,43 @@ class EnrichmentService
             'enriched_at' => date('Y-m-d H:i:s')
         ];
         
+        $enrichmentId = null;
+        
         if ($existing) {
             // Update existing
             $this->enrichmentRepo->updateByLinkedInThreadId($linkedInThread['id'], $enrichmentData);
-            return $existing['id'];
+            $enrichmentId = $existing['id'];
         } else {
             // Create new
-            return $this->enrichmentRepo->create($enrichmentData);
+            $enrichmentId = $this->enrichmentRepo->create($enrichmentData);
         }
+        
+        // Trigger BizDev Pipeline sync after successful LinkedIn enrichment
+        if ($this->mondayService && $enrichmentId) {
+            try {
+                // Get full enrichment record with LinkedIn thread data
+                $enrichment = $this->enrichmentRepo->findById($enrichmentId);
+                if ($enrichment) {
+                    // Add internal sender from LinkedIn thread
+                    $enrichment['internal_sender_email'] = $linkedInThread['internal_sender_email'] ?? null;
+                    $enrichment['last_activity_at'] = $linkedInThread['last_activity_at'] ?? $linkedInThread['updated_at'] ?? null;
+                    
+                    $this->mondayService->syncToBizDevPipeline($enrichment);
+                    $this->logger->info('Triggered BizDev Pipeline sync for LinkedIn enrichment', [
+                        'enrichment_id' => $enrichmentId,
+                        'external_linkedin_url' => $linkedInThread['external_linkedin_url']
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Log but don't fail enrichment if BizDev sync fails
+                $this->logger->warning('Failed to sync LinkedIn to BizDev Pipeline', [
+                    'enrichment_id' => $enrichmentId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        return $enrichmentId;
     }
     
     /**

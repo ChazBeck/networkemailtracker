@@ -11,6 +11,7 @@ use App\Repositories\ContactSyncRepository;
 use App\Repositories\LinkedInThreadRepository;
 use App\Repositories\LinkedInMessageRepository;
 use App\Repositories\LinkedInMondaySyncRepository;
+use App\Repositories\BizDevSyncRepository;
 use Psr\Log\LoggerInterface;
 
 class MondayService
@@ -23,6 +24,7 @@ class MondayService
     private ?LinkedInThreadRepository $linkedInThreadRepo;
     private ?LinkedInMessageRepository $linkedInMessageRepo;
     private ?LinkedInMondaySyncRepository $linkedInSyncRepo;
+    private ?BizDevSyncRepository $bizDevSyncRepo;
     private HttpClient $httpClient;
     private LoggerInterface $logger;
     private string $apiKey;
@@ -30,6 +32,10 @@ class MondayService
     private array $columnIds;
     private string $contactsBoardId;
     private array $contactsColumnIds;
+    private string $bizDevBoardId;
+    private string $bizDevGroupId;
+    private array $bizDevColumnIds;
+    private array $userMapping;
     
     public function __construct(
         MondaySyncRepository $syncRepo,
@@ -41,7 +47,8 @@ class MondayService
         ?ContactSyncRepository $contactSyncRepo = null,
         ?LinkedInThreadRepository $linkedInThreadRepo = null,
         ?LinkedInMessageRepository $linkedInMessageRepo = null,
-        ?LinkedInMondaySyncRepository $linkedInSyncRepo = null
+        ?LinkedInMondaySyncRepository $linkedInSyncRepo = null,
+        ?BizDevSyncRepository $bizDevSyncRepo = null
     ) {
         $this->syncRepo = $syncRepo;
         $this->threadRepo = $threadRepo;
@@ -51,6 +58,7 @@ class MondayService
         $this->linkedInThreadRepo = $linkedInThreadRepo;
         $this->linkedInMessageRepo = $linkedInMessageRepo;
         $this->linkedInSyncRepo = $linkedInSyncRepo;
+        $this->bizDevSyncRepo = $bizDevSyncRepo;
         $this->logger = $logger;
         $this->httpClient = $httpClient ?? new HttpClient();
         
@@ -84,6 +92,30 @@ class MondayService
             'job_title' => $_ENV['MONDAY_CONTACTS_COLUMN_JOB_TITLE'] ?? '',
             'email' => $_ENV['MONDAY_CONTACTS_COLUMN_EMAIL'] ?? '',
             'linkedin' => $_ENV['MONDAY_CONTACTS_COLUMN_LINKEDIN'] ?? '',
+        ];
+        
+        // Load BizDev Pipeline Board configuration
+        $this->bizDevBoardId = $_ENV['MONDAY_BIZDEV_BOARD_ID'] ?? '7045235564';
+        $this->bizDevGroupId = $_ENV['MONDAY_BIZDEV_GROUP_ID'] ?? 'group_mm08w271';
+        $this->bizDevColumnIds = [
+            'people' => $_ENV['MONDAY_BIZDEV_COLUMN_PEOPLE'] ?? 'people__1',
+            'outreach_status' => $_ENV['MONDAY_BIZDEV_COLUMN_OUTREACH_STATUS'] ?? 'status',
+            'contact_date' => $_ENV['MONDAY_BIZDEV_COLUMN_CONTACT_DATE'] ?? 'date_mm08trcs',
+            'outreach_format' => $_ENV['MONDAY_BIZDEV_COLUMN_OUTREACH_FORMAT'] ?? 'color_mm0868fc',
+            'poc' => $_ENV['MONDAY_BIZDEV_COLUMN_POC'] ?? 'text6__1',
+            'poc_position' => $_ENV['MONDAY_BIZDEV_COLUMN_POC_POSITION'] ?? 'text5__1',
+            'company_name' => $_ENV['MONDAY_BIZDEV_COLUMN_COMPANY_NAME'] ?? 'long_text_mm08jgn9',
+            'linkedin' => $_ENV['MONDAY_BIZDEV_COLUMN_LINKEDIN'] ?? 'text9__1',
+        ];
+        
+        // Map Veerless email addresses to Monday user IDs
+        $this->userMapping = [
+            'charlie@veerless.com' => $_ENV['MONDAY_USER_CHARLIE'] ?? '42094544',
+            'marcy@veerless.com' => $_ENV['MONDAY_USER_MARCY'] ?? '42114783',
+            'kristen@veerless.com' => $_ENV['MONDAY_USER_KRISTEN'] ?? '42266191',
+            'ann@veerless.com' => $_ENV['MONDAY_USER_ANN'] ?? '44764179',
+            'katie@veerless.com' => $_ENV['MONDAY_USER_KATIE'] ?? '60952729',
+            'tameka@veerless.com' => $_ENV['MONDAY_USER_TAMEKA'] ?? '75540750',
         ];
     }
     
@@ -169,9 +201,9 @@ class MondayService
             ];
         }
         
-        // Add email body from first email
-        if (!empty($this->columnIds['body']) && $firstEmail && !empty($firstEmail['body_preview'])) {
-            $columnValues[$this->columnIds['body']] = $firstEmail['body_preview'];
+        // Add full email body from first email
+        if (!empty($this->columnIds['body']) && $firstEmail && !empty($firstEmail['body'])) {
+            $columnValues[$this->columnIds['body']] = $firstEmail['body'];
         }
         
         // Add enrichment fields if available
@@ -676,6 +708,181 @@ class MondayService
         }
         
         throw new \Exception('Failed to update Monday contact item');
+    }
+    
+    /**
+     * Sync enriched contact to BizDev Pipeline board
+     * 
+     * @param array $enrichment Enrichment data from database
+     * @return array Result with success status and monday_item_id
+     */
+    public function syncToBizDevPipeline(array $enrichment): array
+    {
+        if (!$this->bizDevSyncRepo) {
+            return [
+                'success' => false,
+                'error' => 'BizDevSyncRepository not configured'
+            ];
+        }
+        
+        if (empty($this->bizDevBoardId)) {
+            return [
+                'success' => false,
+                'error' => 'BizDev board not configured'
+            ];
+        }
+        
+        try {
+            // Check if already synced
+            $existingSync = $this->bizDevSyncRepo->findByEnrichmentId($enrichment['id']);
+            
+            if ($existingSync && $existingSync['item_id']) {
+                $this->logger->debug('Enrichment already synced to BizDev Pipeline', [
+                    'enrichment_id' => $enrichment['id'],
+                    'item_id' => $existingSync['item_id']
+                ]);
+                
+                return [
+                    'success' => true,
+                    'monday_item_id' => $existingSync['item_id'],
+                    'action' => 'already_synced'
+                ];
+            }
+            
+            // Create new item
+            return $this->createBizDevItem($enrichment);
+            
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to sync to BizDev Pipeline', [
+                'enrichment_id' => $enrichment['id'],
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * Create new BizDev Pipeline item
+     * 
+     * @param array $enrichment
+     * @return array
+     */
+    private function createBizDevItem(array $enrichment): array
+    {
+        // Build item name: "{company} - {firstname} {lastname}"
+        $company = $enrichment['company_name'] ?? 'Unknown Company';
+        $firstName = $enrichment['first_name'] ?? '';
+        $lastName = $enrichment['last_name'] ?? '';
+        $fullName = trim("$firstName $lastName");
+        
+        if (empty($fullName)) {
+            $fullName = $enrichment['external_email'] ?? $enrichment['external_linkedin_url'] ?? 'Unknown Contact';
+        }
+        
+        $itemName = "$company - $fullName";
+        
+        // Build column values
+        $columnValues = [];
+        
+        // People - map internal sender to Monday user ID
+        $internalSender = $enrichment['internal_sender_email'] ?? 'charlie@veerless.com';
+        if (isset($this->userMapping[$internalSender])) {
+            $columnValues[$this->bizDevColumnIds['people']] = [
+                'personsAndTeams' => [
+                    ['id' => (int)$this->userMapping[$internalSender], 'kind' => 'person']
+                ]
+            ];
+        }
+        
+        // Outreach Status - "Contacted"
+        if (!empty($this->bizDevColumnIds['outreach_status'])) {
+            $columnValues[$this->bizDevColumnIds['outreach_status']] = ['label' => 'Contacted'];
+        }
+        
+        // Contact Date
+        $contactDate = $enrichment['last_activity_at'] ?? $enrichment['created_at'] ?? date('Y-m-d');
+        if (!empty($this->bizDevColumnIds['contact_date'])) {
+            $columnValues[$this->bizDevColumnIds['contact_date']] = [
+                'date' => date('Y-m-d', strtotime($contactDate))
+            ];
+        }
+        
+        // Outreach Format - determine from source
+        if (!empty($this->bizDevColumnIds['outreach_format'])) {
+            $format = !empty($enrichment['linkedin_thread_id']) ? 'LinkedIn' : 'Email';
+            $columnValues[$this->bizDevColumnIds['outreach_format']] = ['label' => $format];
+        }
+        
+        // POC (Point of Contact)
+        if (!empty($this->bizDevColumnIds['poc']) && $fullName !== 'Unknown Contact') {
+            $columnValues[$this->bizDevColumnIds['poc']] = $fullName;
+        }
+        
+        // POC Position
+        if (!empty($this->bizDevColumnIds['poc_position']) && !empty($enrichment['job_title'])) {
+            $columnValues[$this->bizDevColumnIds['poc_position']] = $enrichment['job_title'];
+        }
+        
+        // Company Name
+        if (!empty($this->bizDevColumnIds['company_name']) && !empty($enrichment['company_name'])) {
+            $columnValues[$this->bizDevColumnIds['company_name']] = $enrichment['company_name'];
+        }
+        
+        // LinkedIn URL
+        if (!empty($this->bizDevColumnIds['linkedin']) && !empty($enrichment['linkedin_url'])) {
+            $columnValues[$this->bizDevColumnIds['linkedin']] = $enrichment['linkedin_url'];
+        }
+        
+        // Build GraphQL mutation
+        $mutation = 'mutation {
+          create_item (
+            board_id: ' . $this->bizDevBoardId . ',
+            group_id: "' . $this->bizDevGroupId . '",
+            item_name: "' . $this->escapeGraphQL($itemName) . '",
+            column_values: "' . $this->escapeGraphQL(json_encode($columnValues)) . '"
+          ) {
+            id
+          }
+        }';
+        
+        $this->logger->debug('Creating BizDev Pipeline item', [
+            'enrichment_id' => $enrichment['id'],
+            'mutation' => $mutation,
+            'column_values' => $columnValues
+        ]);
+        
+        $response = $this->callMondayAPI($mutation);
+        
+        if (isset($response['data']['create_item']['id'])) {
+            $mondayItemId = $response['data']['create_item']['id'];
+            
+            // Save sync record
+            $this->bizDevSyncRepo->create([
+                'enrichment_id' => $enrichment['id'],
+                'board_id' => $this->bizDevBoardId,
+                'item_id' => $mondayItemId,
+                'last_pushed_at' => date('Y-m-d H:i:s'),
+                'last_push_status' => 'ok'
+            ]);
+            
+            $this->logger->info('Created BizDev Pipeline item', [
+                'enrichment_id' => $enrichment['id'],
+                'monday_item_id' => $mondayItemId,
+                'item_name' => $itemName
+            ]);
+            
+            return [
+                'success' => true,
+                'monday_item_id' => $mondayItemId,
+                'action' => 'created'
+            ];
+        }
+        
+        throw new \Exception('Monday API did not return item ID: ' . json_encode($response));
     }
     
     /**
