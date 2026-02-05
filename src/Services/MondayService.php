@@ -99,12 +99,12 @@ class MondayService
         $this->bizDevGroupId = $_ENV['MONDAY_BIZDEV_GROUP_ID'] ?? 'group_mm08w271';
         $this->bizDevColumnIds = [
             'people' => $_ENV['MONDAY_BIZDEV_COLUMN_PEOPLE'] ?? 'people__1',
-            'outreach_status' => $_ENV['MONDAY_BIZDEV_COLUMN_OUTREACH_STATUS'] ?? 'status',
-            'contact_date' => $_ENV['MONDAY_BIZDEV_COLUMN_CONTACT_DATE'] ?? 'date_mm08trcs',
-            'outreach_format' => $_ENV['MONDAY_BIZDEV_COLUMN_OUTREACH_FORMAT'] ?? 'color_mm0868fc',
+            'outreach_status' => $_ENV['MONDAY_BIZDEV_COLUMN_STATUS'] ?? 'status',
+            'contact_date' => $_ENV['MONDAY_BIZDEV_COLUMN_DATE'] ?? 'date_mm08trcs',
+            'outreach_format' => $_ENV['MONDAY_BIZDEV_COLUMN_FORMAT'] ?? 'color_mm0868fc',
             'poc' => $_ENV['MONDAY_BIZDEV_COLUMN_POC'] ?? 'text6__1',
-            'poc_position' => $_ENV['MONDAY_BIZDEV_COLUMN_POC_POSITION'] ?? 'text5__1',
-            'company_name' => $_ENV['MONDAY_BIZDEV_COLUMN_COMPANY_NAME'] ?? 'long_text_mm08jgn9',
+            'poc_position' => $_ENV['MONDAY_BIZDEV_COLUMN_POSITION'] ?? 'text5__1',
+            'company_name' => $_ENV['MONDAY_BIZDEV_COLUMN_COMPANY'] ?? 'long_text_mm08jgn9',
             'linkedin' => $_ENV['MONDAY_BIZDEV_COLUMN_LINKEDIN'] ?? 'text9__1',
         ];
         
