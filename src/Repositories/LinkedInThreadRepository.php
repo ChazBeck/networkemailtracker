@@ -171,4 +171,36 @@ class LinkedInThreadRepository
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    /**
+     * Get all LinkedIn contacts for contacts page (matches email contacts format)
+     * 
+     * @return array
+     */
+    public function getContactsForDashboard(): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT 
+                lt.external_linkedin_url as linkedin_url,
+                lt.external_linkedin_url as email,
+                COUNT(DISTINCT lt.id) as thread_count,
+                MAX(lt.updated_at) as last_contact,
+                MAX(ce.id) as enrichment_id,
+                MAX(ce.first_name) as first_name,
+                MAX(ce.last_name) as last_name,
+                MAX(ce.full_name) as full_name,
+                MAX(ce.company_name) as company_name,
+                MAX(ce.company_url) as company_url,
+                MAX(ce.external_linkedin_url) as original_linkedin_url,
+                MAX(ce.job_title) as job_title,
+                MAX(ce.enrichment_status) as enrichment_status,
+                'linkedin' as source
+            FROM linkedin_threads lt
+            LEFT JOIN contact_enrichment ce ON lt.id = ce.linkedin_thread_id
+            GROUP BY lt.external_linkedin_url
+            ORDER BY MAX(lt.updated_at) DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
