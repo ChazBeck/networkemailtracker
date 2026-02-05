@@ -202,8 +202,8 @@ class MondayService
         }
         
         // Add full email body from first email
-        if (!empty($this->columnIds['body']) && $firstEmail && !empty($firstEmail['body'])) {
-            $columnValues[$this->columnIds['body']] = $firstEmail['body'];
+        if (!empty($this->columnIds['body']) && $firstEmail && !empty($firstEmail['body_text'])) {
+            $columnValues[$this->columnIds['body']] = $firstEmail['body_text'];
         }
         
         // Add enrichment fields if available
