@@ -66,6 +66,7 @@ class MondayService
         $this->apiKey = $_ENV['MONDAY_API_KEY'] ?? '';
         $this->boardId = $_ENV['MONDAY_BOARD_ID'] ?? '';
         $this->columnIds = [
+            'person' => $_ENV['MONDAY_COLUMN_PERSON'] ?? '',
             'subject' => $_ENV['MONDAY_COLUMN_SUBJECT'] ?? '',
             'email' => $_ENV['MONDAY_COLUMN_EMAIL'] ?? '',
             'body' => $_ENV['MONDAY_COLUMN_BODY'] ?? '',
@@ -176,6 +177,16 @@ class MondayService
         
         // Build column values
         $columnValues = [];
+        
+        // Person - map internal sender to Monday user ID
+        $internalSender = $thread['internal_sender_email'] ?? 'charlie@veerless.com';
+        if (!empty($this->columnIds['person']) && isset($this->userMapping[$internalSender])) {
+            $columnValues[$this->columnIds['person']] = [
+                'personsAndTeams' => [
+                    ['id' => (int)$this->userMapping[$internalSender], 'kind' => 'person']
+                ]
+            ];
+        }
         
         // Always add these core fields
         if (!empty($this->columnIds['subject'])) {
