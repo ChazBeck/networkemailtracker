@@ -457,8 +457,8 @@ class EnrichmentService
                 // Get full enrichment record with LinkedIn thread data
                 $enrichment = $this->enrichmentRepo->findById($enrichmentId);
                 if ($enrichment) {
-                    // Add internal sender from LinkedIn thread
-                    $enrichment['internal_sender_email'] = $linkedInThread['internal_sender_email'] ?? null;
+                    // Add internal sender from LinkedIn thread (stored as owner_email)
+                    $enrichment['internal_sender_email'] = $linkedInThread['owner_email'] ?? null;
                     $enrichment['last_activity_at'] = $linkedInThread['last_activity_at'] ?? $linkedInThread['updated_at'] ?? null;
                     
                     $this->mondayService->syncToBizDevPipeline($enrichment);
